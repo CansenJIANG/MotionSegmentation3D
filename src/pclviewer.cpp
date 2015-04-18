@@ -1,5 +1,5 @@
 #include "pclviewer.h"
-#include "ui_pclviewer.h"
+#include "ui_PclViewer.h"
 #include "OctreeViewer.h"
 
 #include <fstream>
@@ -1686,33 +1686,6 @@ void PCLViewer::on_transformPc_clicked()
 ///////////////////////////////////////////////////////////////////////////////////////
 void PCLViewer::on_clipPC_clicked()
 {
-//    // use clipping to remove far away points
-//    if(cloud->points.size()>1)
-//    {
-//        featureDetector->distClip(cloud, clipThd);
-//        char oMsg[200];
-//        std::sprintf(oMsg, "Cloud 1 points father than %1f meters removed.",
-//                     keyPtsStr.params[11]);
-//        ui->outputMsg->appendPlainText( QString(oMsg) );
-
-//        // update point cloud
-//        viewer->removePointCloud("cloud");
-//        viewer->addPointCloud(cloud,"cloud");
-//        ui->qvtkWidget->update();
-//    }
-
-//    if(cloud2->points.size()>1)
-//    {
-//        featureDetector->distClip(cloud2, clipThd);
-//        char oMsg[200];
-//        std::sprintf(oMsg, "Cloud 2 points father than %1f meters removed.",
-//                     keyPtsStr.params[11]);
-//        ui->outputMsg->appendPlainText( QString(oMsg) );
-//        // update point cloud
-//        viewer->removePointCloud(this->fName2.substr(this->fName2.size()-20).c_str());
-//        viewer->addPointCloud(cloud2,this->fName2.substr(this->fName2.size()-20).c_str());
-//        ui->qvtkWidget->update();
-//    }
     if(cloud->points.size()>1)
     {
         // Create the filtering object
@@ -1736,4 +1709,135 @@ void PCLViewer::on_clipPC_clicked()
         on_showCloud_2_clicked();
     }
     ui->outputMsg->appendPlainText( "Clipping is done.");
+}
+
+///////////////////////////////////////////////////////////////////////////////////////
+///// func to load the point cloud sequence
+///////////////////////////////////////////////////////////////////////////////////////
+void PCLViewer::on_loadPcSequence_clicked()
+{
+    loadSeqStr.pcdPath = QFileDialog::getExistingDirectory(this, tr("Open Directory"),
+                                                           "/home/jiang/CvDataset/",
+                                                           QFileDialog::ShowDirsOnly
+                                                           | QFileDialog::DontResolveSymlinks);
+    loadSeqStr.files = QDir(loadSeqStr.pcdPath).entryList(QDir::Files);
+    loadSeqStr.pcSeq.reset(new PointCloudT);
+    loadSeqStr.seqIdx = 0;
+    loadSeqStr.fpsSeq = 0;
+    loadSeqStr.repeatSeq = ui->loadSeqRepeatCkbox->checkState();
+
+    QFile f(loadSeqStr.files.at(loadSeqStr.seqIdx));
+    pcl::io::loadPCDFile<PointT>(
+                (loadSeqStr.pcdPath+"/"+f.fileName()).toStdString().c_str(),
+                *loadSeqStr.pcSeq);
+    viewer->addPointCloud(loadSeqStr.pcSeq, "pointCloudSequence");
+    ui->qvtkWidget->update();
+}
+
+void PCLViewer::on_clearSeq_clicked()
+{
+    loadSeqStr.pcSeq->points.clear();
+    loadSeqStr.seqIdx = 0;
+    loadSeqStr.loadFullSeq = false;
+    loadSeqStr.fullSeq.clear();
+    viewer->updatePointCloud(loadSeqStr.pcSeq, "pointCloudSequence");
+    ui->qvtkWidget->update();
+}
+
+void PCLViewer::on_showPrevSeq_clicked()
+{
+    if(loadSeqStr.files.size()<1) return;
+
+    if(loadSeqStr.seqIdx==0 && loadSeqStr.repeatSeq == false)
+    {
+        return;
+    }
+    else if(loadSeqStr.seqIdx==0 && loadSeqStr.repeatSeq == true)
+    {
+        loadSeqStr.seqIdx = loadSeqStr.files.size()-1;
+    }
+    else
+    {
+        loadSeqStr.seqIdx--;
+    }
+    QFile f(loadSeqStr.files.at(loadSeqStr.seqIdx));
+    pcl::io::loadPCDFile<PointT>(
+                (loadSeqStr.pcdPath+"/"+f.fileName()).toStdString().c_str(),
+                *loadSeqStr.pcSeq);
+
+    viewer->updatePointCloud(loadSeqStr.pcSeq, "pointCloudSequence");
+    ui->qvtkWidget->update();
+}
+void PCLViewer::on_showNextSeq_clicked()
+{
+    if(loadSeqStr.files.size()<1) return;
+
+    if(loadSeqStr.seqIdx==loadSeqStr.files.size()-1
+            && loadSeqStr.repeatSeq == false)
+    {
+        return;
+    }
+    else if(loadSeqStr.seqIdx==loadSeqStr.files.size()-1
+            && loadSeqStr.repeatSeq == true)
+    {
+        loadSeqStr.seqIdx = 0;
+    }
+    else
+    {
+        loadSeqStr.seqIdx++;
+    }
+    QFile f(loadSeqStr.files.at(loadSeqStr.seqIdx));
+    pcl::io::loadPCDFile<PointT>(
+                (loadSeqStr.pcdPath+"/"+f.fileName()).toStdString().c_str(),
+                *loadSeqStr.pcSeq);
+    viewer->updatePointCloud(loadSeqStr.pcSeq, "pointCloudSequence");
+    ui->qvtkWidget->update();
+}
+
+void PCLViewer::on_loadSeqRepeatCkbox_stateChanged(int arg1)
+{
+    loadSeqStr.repeatSeq = ui->loadSeqRepeatCkbox->checkState();
+}
+
+void PCLViewer::on_loadSeqFps_editingFinished()
+{
+    loadSeqStr.fpsSeq = ui->loadSeqFps->text().toFloat();
+}
+
+void PCLViewer::on_loadFullSeq_clicked()
+{
+    loadSeqStr.loadFullSeq = true;
+    loadSeqStr.fullSeq.reserve( loadSeqStr.files.size() );
+    PointCloudT::Ptr pcSeqTmp(new PointCloudT);
+    for(size_t i=0; i<loadSeqStr.files.size(); i++)
+    {
+        QFile f(loadSeqStr.files.at(i));
+        pcl::io::loadPCDFile<PointT>((loadSeqStr.pcdPath+"/"+
+                                      f.fileName()).toStdString().c_str(), *pcSeqTmp);
+        loadSeqStr.fullSeq.push_back(*pcSeqTmp);
+    }
+    std::cout<<loadSeqStr.fullSeq.size();
+    // Output message
+    ui->outputMsg->appendPlainText(
+                QString("Load full point cloud sequence done."));
+}
+
+void PCLViewer::on_showFullSequence_clicked()
+{
+    if(loadSeqStr.loadFullSeq = false) return;
+    PointCloudT::Ptr pcSeqTmp(new PointCloudT);
+    s16 sleepTime = 1000/loadSeqStr.fpsSeq;
+    uc8 stopInfLoop = 10;
+    do
+    {
+        for(size_t i=0; i<loadSeqStr.files.size(); i++)
+        {
+            *pcSeqTmp = loadSeqStr.fullSeq.at(i);
+            viewer->updatePointCloud(pcSeqTmp, "pointCloudSequence");
+            ui->qvtkWidget->repaint();
+            boost::this_thread::sleep(
+                        boost::posix_time::milliseconds(sleepTime) );
+        }
+        --stopInfLoop;
+    }while(loadSeqStr.repeatSeq && stopInfLoop>0);
 }

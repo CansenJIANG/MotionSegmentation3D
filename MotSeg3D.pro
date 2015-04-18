@@ -72,6 +72,3 @@ LIBS += -L/usr/lib \
             -lvtkGraphics
 
 
-#LIBS += "/home/jiang/Copy/Doctoral/Scripts/JiangDLL/build-JiangDLL-Desktop_Qt_4_8_1-Release/jiangdll.o"
-
-#LIBS += "/home/jiang/Copy/Doctoral/Scripts/JiangDLL/build-JiangDLL-Desktop_Qt_4_8_1-Debug/jiangdll.o"

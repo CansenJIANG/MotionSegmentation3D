@@ -61,6 +61,7 @@
 #include <pcl/features/normal_3d.h>
 #include <pcl/features/intensity_gradient.h>
 #include <pcl/features/rift.h>
+#include <pcl/io/pcd_grabber.h>
 
 // headers for ransac
 #include <pcl/filters/extract_indices.h>

@@ -72,6 +72,19 @@ struct str_keyPts{
 };
 
 
+struct str_loadSeq
+{
+    u16 seqIdx;
+    PointCloudT::Ptr pcSeq;
+    bool repeatSeq;
+    QString pcdPath;
+    QStringList files;
+    bool loadFullSeq;
+    std::vector<PointCloudT> fullSeq;
+    float fpsSeq;
+};
+
+
 namespace Ui
 {
     class PCLViewer;
@@ -122,6 +135,8 @@ protected:
     f32 shiftPC_X;
     f32 shiftPC_Y;
     f32 shiftPC_Z;
+
+    str_loadSeq loadSeqStr;
 
     // Keypoint detector parameters structure
     struct str_keyPts keyPtsStr;
@@ -283,6 +298,25 @@ private slots:
     void on_shiftX_val_editingFinished();
     void on_shiftY_val_editingFinished();
     void on_shiftZ_val_editingFinished();
+
+    ///*******************************************
+    ///* Load point cloud Sequence               *
+    ///*******************************************
+    void on_loadPcSequence_clicked();
+
+    void on_clearSeq_clicked();
+
+    void on_showPrevSeq_clicked();
+
+    void on_loadSeqRepeatCkbox_stateChanged(int arg1);
+
+    void on_showNextSeq_clicked();
+
+    void on_loadSeqFps_editingFinished();
+
+    void on_loadFullSeq_clicked();
+
+    void on_showFullSequence_clicked();
 
 private:
     Ui::PCLViewer *ui;

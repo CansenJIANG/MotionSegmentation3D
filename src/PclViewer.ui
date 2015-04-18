@@ -3831,11 +3831,11 @@
         <attribute name="title">
          <string>P. C. Sequence</string>
         </attribute>
-        <widget class="QPushButton" name="loadPcSequence">
+        <widget class="QSplitter" name="splitter_46">
          <property name="geometry">
           <rect>
            <x>10</x>
-           <y>10</y>
+           <y>20</y>
            <width>220</width>
            <height>25</height>
           </rect>
@@ -3848,13 +3848,238 @@
          </property>
          <property name="maximumSize">
           <size>
+           <width>16777215</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <widget class="QLabel" name="label_3">
+          <property name="text">
+           <string>Fps</string>
+          </property>
+         </widget>
+         <widget class="QLineEdit" name="loadSeqFps">
+          <property name="minimumSize">
+           <size>
+            <width>70</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>70</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>0</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          </property>
+         </widget>
+         <widget class="QCheckBox" name="loadSeqRepeatCkbox">
+          <property name="minimumSize">
+           <size>
+            <width>105</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>105</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Repeat</string>
+          </property>
+         </widget>
+        </widget>
+        <widget class="QSplitter" name="splitter_47">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>110</y>
+           <width>220</width>
+           <height>25</height>
+          </rect>
+         </property>
+         <property name="minimumSize">
+          <size>
            <width>220</width>
            <height>25</height>
           </size>
          </property>
-         <property name="text">
-          <string>Load + Show P. C. Sequence</string>
+         <property name="maximumSize">
+          <size>
+           <width>216</width>
+           <height>25</height>
+          </size>
          </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <widget class="QPushButton" name="showPrevSeq">
+          <property name="minimumSize">
+           <size>
+            <width>105</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>105</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Show Prev.</string>
+          </property>
+         </widget>
+         <widget class="QPushButton" name="showNextSeq">
+          <property name="minimumSize">
+           <size>
+            <width>105</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>105</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="sizeIncrement">
+           <size>
+            <width>105</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Show Next</string>
+          </property>
+         </widget>
+        </widget>
+        <widget class="QSplitter" name="splitter_48">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>50</y>
+           <width>220</width>
+           <height>25</height>
+          </rect>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>220</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>216</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <widget class="QPushButton" name="loadPcSequence">
+          <property name="minimumSize">
+           <size>
+            <width>105</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>105</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Load P.C. Seq.</string>
+          </property>
+         </widget>
+         <widget class="QPushButton" name="loadFullSeq">
+          <property name="minimumSize">
+           <size>
+            <width>105</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>105</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Load Full Seq.</string>
+          </property>
+         </widget>
+        </widget>
+        <widget class="QSplitter" name="splitter_49">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>80</y>
+           <width>220</width>
+           <height>25</height>
+          </rect>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>220</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>216</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <widget class="QPushButton" name="showFullSequence">
+          <property name="minimumSize">
+           <size>
+            <width>105</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>105</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Show Full Seq.</string>
+          </property>
+         </widget>
+         <widget class="QPushButton" name="clearSeq">
+          <property name="minimumSize">
+           <size>
+            <width>105</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>105</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Clear Seq.</string>
+          </property>
+         </widget>
         </widget>
        </widget>
       </widget>
