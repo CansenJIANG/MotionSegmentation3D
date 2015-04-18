@@ -1734,6 +1734,9 @@ void PCLViewer::on_loadPcSequence_clicked()
     ui->qvtkWidget->update();
 }
 
+///////////////////////////////////////////////////////////////////////////////////////
+///// func to clear point cloud sequence
+///////////////////////////////////////////////////////////////////////////////////////
 void PCLViewer::on_clearSeq_clicked()
 {
     loadSeqStr.pcSeq->points.clear();
@@ -1744,6 +1747,9 @@ void PCLViewer::on_clearSeq_clicked()
     ui->qvtkWidget->update();
 }
 
+///////////////////////////////////////////////////////////////////////////////////////
+///// func to show point cloud sequence frame to frame
+///////////////////////////////////////////////////////////////////////////////////////
 void PCLViewer::on_showPrevSeq_clicked()
 {
     if(loadSeqStr.files.size()<1) return;
@@ -1794,14 +1800,12 @@ void PCLViewer::on_showNextSeq_clicked()
     ui->qvtkWidget->update();
 }
 
+///////////////////////////////////////////////////////////////////////////////////////
+///// func to load point cloud sequence
+///////////////////////////////////////////////////////////////////////////////////////
 void PCLViewer::on_loadSeqRepeatCkbox_stateChanged(int arg1)
 {
     loadSeqStr.repeatSeq = ui->loadSeqRepeatCkbox->checkState();
-}
-
-void PCLViewer::on_loadSeqFps_editingFinished()
-{
-    loadSeqStr.fpsSeq = ui->loadSeqFps->text().toFloat();
 }
 
 void PCLViewer::on_loadFullSeq_clicked()
@@ -1822,6 +1826,13 @@ void PCLViewer::on_loadFullSeq_clicked()
                 QString("Load full point cloud sequence done."));
 }
 
+///////////////////////////////////////////////////////////////////////////////////////
+///// func to show full point cloud sequence
+///////////////////////////////////////////////////////////////////////////////////////
+void PCLViewer::on_loadSeqFps_editingFinished()
+{
+    loadSeqStr.fpsSeq = ui->loadSeqFps->text().toFloat();
+}
 void PCLViewer::on_showFullSequence_clicked()
 {
     if(loadSeqStr.loadFullSeq = false) return;
