@@ -4085,7 +4085,7 @@
          <property name="geometry">
           <rect>
            <x>10</x>
-           <y>160</y>
+           <y>180</y>
            <width>220</width>
            <height>25</height>
           </rect>
@@ -4122,7 +4122,7 @@
            <string>Trk. Start</string>
           </property>
          </widget>
-         <widget class="QLineEdit" name="lineEdit_2">
+         <widget class="QLineEdit" name="trkStartIdx">
           <property name="minimumSize">
            <size>
             <width>35</width>
@@ -4147,7 +4147,7 @@
            <string>Trk. End</string>
           </property>
          </widget>
-         <widget class="QLineEdit" name="lineEdit_3">
+         <widget class="QLineEdit" name="trkEndIdx">
           <property name="minimumSize">
            <size>
             <width>35</width>
@@ -4161,7 +4161,7 @@
            </size>
           </property>
           <property name="text">
-           <string>1</string>
+           <string>5</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -4172,7 +4172,7 @@
          <property name="geometry">
           <rect>
            <x>10</x>
-           <y>190</y>
+           <y>210</y>
            <width>220</width>
            <height>25</height>
           </rect>
@@ -4186,7 +4186,7 @@
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
-         <widget class="QPushButton" name="pushButton">
+         <widget class="QPushButton" name="TrkFeatures">
           <property name="maximumSize">
            <size>
             <width>105</width>
@@ -4203,7 +4203,7 @@
            <string>Trk. Features</string>
           </property>
          </widget>
-         <widget class="QPushButton" name="pushButton_2">
+         <widget class="QPushButton" name="trackNext">
           <property name="minimumSize">
            <size>
             <width>105</width>
@@ -4217,7 +4217,72 @@
            </size>
           </property>
           <property name="text">
-           <string>PushButton</string>
+           <string>Trk. Next</string>
+          </property>
+         </widget>
+        </widget>
+        <widget class="QSplitter" name="splitter_52">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>140</y>
+           <width>220</width>
+           <height>25</height>
+          </rect>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>220</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>216</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <widget class="QPushButton" name="showSequence">
+          <property name="minimumSize">
+           <size>
+            <width>105</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>105</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Hide Seq.</string>
+          </property>
+         </widget>
+         <widget class="QPushButton" name="showNextSeq_2">
+          <property name="minimumSize">
+           <size>
+            <width>105</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>105</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="sizeIncrement">
+           <size>
+            <width>105</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Show Next</string>
           </property>
          </widget>
         </widget>

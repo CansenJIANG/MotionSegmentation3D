@@ -82,6 +82,7 @@ struct str_loadSeq
     bool loadFullSeq;
     std::vector<PointCloudT> fullSeq;
     float fpsSeq;
+    bool trackNext;
 };
 
 
@@ -163,6 +164,9 @@ protected:
     void filterKeyPts(PointCloudT::Ptr &cloud, PointCloudT::Ptr &keyPts,
                       PointCloudT::Ptr &filteredKeyPts,
                       extractFeatures *fDetector, str_keyPts &keyPtsStr);
+
+    // func to track feature points
+    void trkFeatures2Frames(void);
 
     // Add point picking callback to viewer:
     struct callback_args cb_args;
@@ -317,6 +321,12 @@ private slots:
     void on_loadFullSeq_clicked();
 
     void on_showFullSequence_clicked();
+
+    void on_showSequence_clicked();
+
+    void on_TrkFeatures_clicked();
+
+    void on_trackNext_clicked();
 
 private:
     Ui::PCLViewer *ui;

@@ -85,7 +85,7 @@ PCLViewer::on_LoadPC_clicked()
 {
     // load *.pcd file
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),
-                                                    "/home/jiang/CvData/kinect_textured/", tr("Files (*.pcd)"));
+                                                    "/home/jiang/CvDataset/kinect_textured/", tr("Files (*.pcd)"));
     if(fileName.size()<1)
     {
         return;
@@ -165,7 +165,7 @@ PCLViewer::on_add_PC_clicked()
 {
     // load *.pcd file
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),
-                                                    "/home/jiang/CvData/kinect_textured/", tr("Files (*.pcd)"));
+                                                    "/home/jiang/CvDataset/kinect_textured/", tr("Files (*.pcd)"));
     if(fileName.size()<1)
     {
         return;
@@ -190,8 +190,8 @@ PCLViewer::on_add_PC_clicked()
         char oMsg[200];
         std::sprintf(oMsg, "Size of loaded point cloud: %u.", cloud2->points.size());
         ui->outputMsg->appendPlainText( QString(oMsg) );
-        viewer->addPointCloud(cloud2,this->fName2.substr(this->fName2.size()-20).c_str());
-        viewer->updatePointCloud (cloud2, this->fName2.substr(this->fName2.size()-20).c_str());
+        viewer->addPointCloud(cloud2,"cloud2");
+        viewer->updatePointCloud (cloud2, "cloud2");
     }else
     {
         ui->outputMsg->appendPlainText( QString("ERROR: Load .pcd file failed ... ") );
@@ -218,12 +218,12 @@ PCLViewer::on_showCloud_2_clicked()
     if( QString ::compare( showKeypts, ui->showCloud_2->text(), Qt::CaseInsensitive) )
     {
         ui->showCloud_2->setText(showKeypts);
-        viewer->removePointCloud(this->fName2.substr(this->fName2.size()-20).c_str());
+        viewer->removePointCloud("cloud2");
         ui->outputMsg->appendPlainText(QString("Cloud_2 is hidden"));
     }else
     {
         ui->showCloud_2->setText(hideKeypts);
-        viewer->addPointCloud(cloud2,this->fName2.substr(this->fName2.size()-20).c_str());
+        viewer->addPointCloud(cloud2,"cloud2");
         ui->outputMsg->appendPlainText(QString("Cloud_2 is shown."));
     }
     ui->qvtkWidget->update();
@@ -424,7 +424,7 @@ void
 PCLViewer::on_saveFeatures_clicked()
 {
     QString fileName = QFileDialog::getSaveFileName(this, tr("Save File"),
-                                                    "/home/jiang/CvData/Kinect_MultiObj_Motions/features_.txt", tr("features (*.txt)"));
+                                                    "/home/jiang/CvDataset/Kinect_MultiObj_Motions/features_.txt", tr("features (*.txt)"));
 
     std::ofstream ofile;
     // create a new file or select the existing files to continue saving selected features
@@ -739,12 +739,12 @@ PCLViewer::on_keyPtDetectors_activated(int index)
         this->keyPtsStr.name = "Harris";
 
         //  Harris parameter display
-        ui->kParam_0->setText("Min scale stddev");
-        ui->kParam_1->setText("Octave number");
-        ui->kParam_2->setText("Octave scale num.");
-        ui->kParam_3->setText("Min conrast");
-        ui->kParam_4->setText("Null");
-        ui->kParam_5->setText("Null");
+        ui->kParam_0->setText("NA");
+        ui->kParam_1->setText("NA");
+        ui->kParam_2->setText("NA");
+        ui->kParam_3->setText("NA");
+        ui->kParam_4->setText("NA");
+        ui->kParam_5->setText("NA");
 
         // Harris parameters default settings
         this->keyPtsStr.params[0] = 0.1;
@@ -1002,6 +1002,7 @@ PCLViewer::filterKeyPts(PointCloudT::Ptr &cloud, PointCloudT::Ptr &keyPts,
                  filteredKeyPts->points.size());
     ui->outputMsg->appendPlainText( QString(oMsg) );
 }
+
 
 void
 PCLViewer::on_filterKeypts_1_clicked()
@@ -1615,7 +1616,7 @@ void PCLViewer::on_loadSelectedFeat_clicked()
 {
     // load *.pcd file
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),
-                                                    "/home/jiang/CvData/kinect_textured/", tr("Files (*.pcd)"));
+                                                    "/home/jiang/CvDataset/kinect_textured/", tr("Files (*.pcd)"));
     if(fileName.size()<1)
     {
         return;
@@ -1724,12 +1725,18 @@ void PCLViewer::on_loadPcSequence_clicked()
     loadSeqStr.pcSeq.reset(new PointCloudT);
     loadSeqStr.seqIdx = 0;
     loadSeqStr.fpsSeq = 0;
+    loadSeqStr.trackNext = false;
+    loadSeqStr.loadFullSeq = false;
     loadSeqStr.repeatSeq = ui->loadSeqRepeatCkbox->checkState();
 
     QFile f(loadSeqStr.files.at(loadSeqStr.seqIdx));
     pcl::io::loadPCDFile<PointT>(
                 (loadSeqStr.pcdPath+"/"+f.fileName()).toStdString().c_str(),
                 *loadSeqStr.pcSeq);
+    QString outMsg = QString( loadSeqStr.files.size() );
+    outMsg = "Point cloud sequence length is: " + outMsg;
+    ui->outputMsg->appendPlainText( outMsg );
+    ui->showSequence->setText("Hide Seq.");
     viewer->addPointCloud(loadSeqStr.pcSeq, "pointCloudSequence");
     ui->qvtkWidget->update();
 }
@@ -1835,7 +1842,7 @@ void PCLViewer::on_loadSeqFps_editingFinished()
 }
 void PCLViewer::on_showFullSequence_clicked()
 {
-    if(loadSeqStr.loadFullSeq = false) return;
+    if(!loadSeqStr.loadFullSeq) return;
     PointCloudT::Ptr pcSeqTmp(new PointCloudT);
     s16 sleepTime = 1000/loadSeqStr.fpsSeq;
     uc8 stopInfLoop = 10;
@@ -1851,4 +1858,125 @@ void PCLViewer::on_showFullSequence_clicked()
         }
         --stopInfLoop;
     }while(loadSeqStr.repeatSeq && stopInfLoop>0);
+}
+
+void PCLViewer::on_showSequence_clicked()
+{
+    QString showSeq = "Show Seq.";
+    QString hidSeq = "Hide Seq.";
+
+    if(loadSeqStr.pcSeq->points.size()<1)
+    {
+        return;
+    }
+    // switch show/hide state to control the visualization of keypts
+    if( QString ::compare( hidSeq, ui->showSequence->text(), Qt::CaseInsensitive) )
+    {
+        ui->showSequence->setText(hidSeq);
+        viewer->addPointCloud(loadSeqStr.pcSeq, "pointCloudSequence");
+        ui->outputMsg->appendPlainText(QString("Point cloud sequence shown."));
+    }else
+    {
+        ui->showSequence->setText(showSeq);
+        viewer->removePointCloud("pointCloudSequence");
+        ui->qvtkWidget->update();
+        ui->outputMsg->appendPlainText(QString("Point cloud sequence is hiden."));
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////
+///// func to track features in sequence
+///////////////////////////////////////////////////////////////////////////////////////
+void PCLViewer::on_TrkFeatures_clicked()
+{
+    s16 f0 = ui->trkStartIdx->text().toInt();
+    s16 fn = ui->trkEndIdx->text().toInt();
+    if(fn >= loadSeqStr.files.size())
+    {
+        fn = loadSeqStr.files.size()-1;
+        ui->trkEndIdx->setText(QString(loadSeqStr.files.size()));
+    }
+    if(!loadSeqStr.loadFullSeq)
+    {
+        std::cout<<"loading track sequence\n";
+        PointCloudT::Ptr pcSeqTmp(new PointCloudT);
+        loadSeqStr.fullSeq.reserve( fn-f0+1 );
+        // load the tracking sequence
+        for(size_t i= 0;i<loadSeqStr.files.size();i++)
+        {
+            if(i>=f0 && i<= fn)
+            {
+                QFile f(loadSeqStr.files.at(i));
+                pcl::io::loadPCDFile<PointT>((loadSeqStr.pcdPath+"/"+
+                                              f.fileName()).toStdString().c_str(), *pcSeqTmp);
+                loadSeqStr.fullSeq.push_back(*pcSeqTmp);
+                continue;
+            }
+            PointCloudT emptyCloud;
+            emptyCloud.resize(0);
+            loadSeqStr.fullSeq.push_back(emptyCloud);
+        }
+    }
+    loadSeqStr.seqIdx = f0;
+    loadSeqStr.trackNext = true;
+    on_showSequence_clicked();
+    // track features
+    trkFeatures2Frames();
+}
+
+/// func to track features of two consecutive
+void PCLViewer::trkFeatures2Frames()
+{
+    if(!loadSeqStr.trackNext) return;
+
+    cloud.reset(new PointCloudT);
+    cloud2.reset(new PointCloudT);
+    *cloud  = loadSeqStr.fullSeq.at(loadSeqStr.seqIdx);
+    *cloud2 = loadSeqStr.fullSeq.at(loadSeqStr.seqIdx+1);
+    std::vector<s16> nanIdx;
+    pcl::removeNaNFromPointCloud(*cloud,*cloud, nanIdx);
+    nanIdx.clear();
+    pcl::removeNaNFromPointCloud(*cloud2,*cloud2, nanIdx);
+    nanIdx.clear();
+    on_clipPC_clicked();
+
+    // detect key points
+    on_keyPtDetectors_activated(2);
+    ui->keyPtDetectors->setCurrentIndex(2);
+    on_runKeyPtsDetector_1_clicked();
+    on_runKeyPtsDetector_2_clicked();
+    // filter key points
+    on_filterKeypts_1_clicked();
+    on_filterKeypts_2_clicked();
+    on_showFilteredKeypts_1_clicked();
+    on_showFilteredKeypts_2_clicked();
+
+
+    // match key points
+    on_featureDescriptor_activated(3);
+    ui->featureDescriptor->setCurrentIndex(3);
+    on_matchKeypts_clicked();
+    ui->goodMatches->setChecked(true);
+    on_showCloud_1_clicked();
+    on_drawMatches_clicked();
+
+
+    // update point cloud viewer
+    viewer->updatePointCloud (cloud, "cloud");
+    viewer->updatePointCloud (cloud2, "cloud2");
+    ui->qvtkWidget->update();
+
+    loadSeqStr.trackNext = false;
+}
+void PCLViewer::on_trackNext_clicked()
+{
+    s16 trkEndIdx = ui->trkEndIdx->text().toInt();
+    if( ++loadSeqStr.seqIdx < trkEndIdx)
+    {
+        loadSeqStr.trackNext = true;
+    }else
+    {
+        loadSeqStr.trackNext = false;
+    }
+    trkFeatures2Frames();
 }
