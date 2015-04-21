@@ -86,6 +86,32 @@ T getMedian(std::vector<T> &input)
     }
     return median;
 }
+template<typename T>
+T getMean(const std::vector<T> &v)
+{
+    return std::accumulate(v.begin(), v.end(), 0.0) / v.size();
+}
+template <typename T>
+T getStdev(const std::vector<T> &v, const float &mean)
+{
+    float sum_deviation = 0.0;
+    for(size_t i=0; i<v.size(); i++)
+    {
+        sum_deviation += (v[i]-mean)*(v[i]-mean);
+    }
+    return std::sqrt(sum_deviation/v.size());
+}
 
+template <typename T>
+T getStdev(const std::vector<T> &v)
+{
+    float mean = getMean(v);
+    float sum_deviation = 0.0;
+    for(size_t i=0; i<v.size(); i++)
+    {
+        sum_deviation += (v[i]-mean)*(v[i]-mean);
+    }
+    return std::sqrt(sum_deviation/v.size());
+}
 
 #endif // COMMONFUNC_H

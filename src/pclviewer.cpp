@@ -1338,6 +1338,7 @@ PCLViewer::on_matchKeypts_clicked()
                                                               this->featDescrStr.params);
 
         // write out the descriptors
+        if(0)
         {
             std::ofstream Shot1344Desc_1, Shot1344Desc_2;
             Shot1344Desc_1.open ("Shot1344Desc_1.txt");
@@ -1364,9 +1365,9 @@ PCLViewer::on_matchKeypts_clicked()
             }
             Shot1344Desc_2.close();
         }
-        std::cout<<"shot descriptor computed successfully\n";
-        std::cout<<"size of descriptor 1: "<<Shot1344Cloud_1->points.size()<<std::endl;
-        std::cout<<"size of descriptor 2: "<<Shot1344Cloud_2->points.size()<<std::endl;
+//        std::cout<<"shot descriptor computed successfully\n";
+//        std::cout<<"size of descriptor 1: "<<Shot1344Cloud_1->points.size()<<std::endl;
+//        std::cout<<"size of descriptor 2: "<<Shot1344Cloud_2->points.size()<<std::endl;
 
         matchesFound = featureDetector->crossMatching(Shot1344Cloud_1, Shot1344Cloud_2,
                                                       &featDescrStr.matchIdx1, &featDescrStr.matchIdx2,
@@ -1455,7 +1456,7 @@ PCLViewer::drawMatches(PointCloudT::Ptr &corr_1, PointCloudT::Ptr & corr_2,
 
     while( idxLine < corr_1->points.size() )
     {
-        QString lineName = QString::number(idxLine);
+        QString lineName = QString::number(idxLine+featDescrStr.lineIdx);
         // scale the line width with the descriptor distance
         // smaller distance, higher the value
         float scl = minDist/featDescrStr.matchDist[idxLine];
@@ -1469,7 +1470,7 @@ PCLViewer::drawMatches(PointCloudT::Ptr &corr_1, PointCloudT::Ptr & corr_2,
         ++pt_2;
         ++idxLine;
     }
-    featDescrStr.lineIdx = idxLine;
+    featDescrStr.lineIdx += idxLine;
     ui->qvtkWidget->update();
 }
 
@@ -1492,14 +1493,29 @@ void PCLViewer::on_drawMatches_clicked()
     std::cout<<"size of matchIdx1: "<<featDescrStr.matchIdx1.size()
             <<"size of matchIdx2: "<<featDescrStr.matchIdx2.size()<<"\n";
 
-    f32 medianDist = getMedian(featDescrStr.matchDist);
+    f32 medianDescDist = getMedian(featDescrStr.matchDist);
+//    std::cout<<"median dist: "<<medianDescDist<<"\n";
+//    f32 meanDist = getMean(featDescrStr.matchDist);
+//    std::cout<<"mean dist: "<<meanDist<<"\n";
+//    f32 stdevDist = getStdev(featDescrStr.matchDist, meanDist);
+//    std::cout<<"stdevDist: "<<stdevDist<<"\n";
+
+//    std::ofstream matchDistFile;
+//    matchDistFile.open ("matchDistFile.txt");
+//    for(int i_1 = 0; i_1<featDescrStr.matchDist.size();i_1++)
+//    {
+
+//            matchDistFile << featDescrStr.matchDist[i_1] <<"\n";
+//    }
+//    matchDistFile.close();
 
     // get correspondences
     if(ui->goodMatches->checkState())
     {// draw half of the good matches
         for(u16 i=0; i<featDescrStr.matchIdx1.size(); ++i)
         {
-            if(featDescrStr.matchDist[i]<medianDist)
+            std::cout<<"d = "<<featDescrStr.matchDist[i]<<"; ";
+            if(featDescrStr.matchDist[i]< medianDescDist)
             {
                 corr_1->push_back(filteredKeyPts ->points[ featDescrStr.matchIdx1[i]]);
                 corr_2->push_back(filteredKeyPts2->points[ featDescrStr.matchIdx2[i]]);
@@ -1514,8 +1530,32 @@ void PCLViewer::on_drawMatches_clicked()
             corr_2->push_back(filteredKeyPts2->points[ featDescrStr.matchIdx2[i]]);
         }
     }
-    pcl::io::savePCDFileASCII ("corr_ref.pcd", *corr_1);
-    pcl::io::savePCDFileASCII ("corr_mot.pcd", *corr_2);
+    // remove outliers with large Euclidean Distance
+    {
+        std::vector<f32> euclDist;
+        for(size_t i=0; i<corr_1->points.size(); i++)
+        {
+            f32 tmpDist = commonFunc::l2norm(corr_1->points.at(i).x - corr_2->points.at(i).x,
+                                             corr_1->points.at(i).y - corr_2->points.at(i).y,
+                                             corr_1->points.at(i).z - corr_2->points.at(i).z);
+            euclDist.push_back(tmpDist);
+        }
+        f32 medianEuclDist = getMedian(euclDist);
+        size_t i = corr_1->points.size();
+        while(i--)
+        {
+            if(euclDist[i]>medianEuclDist)
+            {
+                corr_1->points.erase(corr_1->points.begin()+i);
+                corr_2->points.erase(corr_2->points.begin()+i);
+            }
+            std::cout<<"bad matches removed!\n";
+        }
+    }
+    std::cout<<"size of good matches: "<<corr_1->points.size()
+            <<", "<<corr_2->points.size()<<std::endl;
+//    pcl::io::savePCDFileASCII ("corr_ref.pcd", *corr_1);
+//    pcl::io::savePCDFileASCII ("corr_mot.pcd", *corr_2);
     drawMatches(corr_1, corr_2, keyPtsStr.viewColor);
     featDescrStr.lineDrawOn = 1;
 }
@@ -1733,8 +1773,8 @@ void PCLViewer::on_loadPcSequence_clicked()
     pcl::io::loadPCDFile<PointT>(
                 (loadSeqStr.pcdPath+"/"+f.fileName()).toStdString().c_str(),
                 *loadSeqStr.pcSeq);
-    QString outMsg = QString( loadSeqStr.files.size() );
-    outMsg = "Point cloud sequence length is: " + outMsg;
+    QString outMsg = "Point cloud sequence length is: "
+            + QString::number(loadSeqStr.files.size());
     ui->outputMsg->appendPlainText( outMsg );
     ui->showSequence->setText("Hide Seq.");
     viewer->addPointCloud(loadSeqStr.pcSeq, "pointCloudSequence");
@@ -1939,6 +1979,10 @@ void PCLViewer::trkFeatures2Frames()
     pcl::removeNaNFromPointCloud(*cloud2,*cloud2, nanIdx);
     nanIdx.clear();
     on_clipPC_clicked();
+
+    // shift point cloud for better visualization
+//    shiftPC_Z = 0.2;
+//    on_transformPc_clicked();
 
     // detect key points
     on_keyPtDetectors_activated(2);
