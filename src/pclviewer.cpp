@@ -1456,7 +1456,7 @@ PCLViewer::drawMatches(PointCloudT::Ptr &corr_1, PointCloudT::Ptr & corr_2,
 
     while( idxLine < corr_1->points.size() )
     {
-        QString lineName = QString::number(idxLine+featDescrStr.lineIdx);
+        QString lineName = QString::number(idxLine+loadSeqStr.drawMatchIdx);
         // scale the line width with the descriptor distance
         // smaller distance, higher the value
         float scl = minDist/featDescrStr.matchDist[idxLine];
@@ -1470,7 +1470,11 @@ PCLViewer::drawMatches(PointCloudT::Ptr &corr_1, PointCloudT::Ptr & corr_2,
         ++pt_2;
         ++idxLine;
     }
-    featDescrStr.lineIdx += idxLine;
+    featDescrStr.lineIdx = idxLine;
+    if(loadSeqStr.trackNext)
+    {
+        loadSeqStr.drawMatchIdx += idxLine;
+    }
     ui->qvtkWidget->update();
 }
 
@@ -1758,7 +1762,7 @@ void PCLViewer::on_clipPC_clicked()
 void PCLViewer::on_loadPcSequence_clicked()
 {
     loadSeqStr.pcdPath = QFileDialog::getExistingDirectory(this, tr("Open Directory"),
-                                                           "/home/jiang/CvDataset/",
+                                                           "/home/jiang/CvDataset/MovingCam2Objs/",
                                                            QFileDialog::ShowDirsOnly
                                                            | QFileDialog::DontResolveSymlinks);
     loadSeqStr.files = QDir(loadSeqStr.pcdPath).entryList(QDir::Files);
@@ -1767,6 +1771,7 @@ void PCLViewer::on_loadPcSequence_clicked()
     loadSeqStr.fpsSeq = 0;
     loadSeqStr.trackNext = false;
     loadSeqStr.loadFullSeq = false;
+    loadSeqStr.drawMatchIdx = 0;
     loadSeqStr.repeatSeq = ui->loadSeqRepeatCkbox->checkState();
 
     QFile f(loadSeqStr.files.at(loadSeqStr.seqIdx));
@@ -1786,10 +1791,11 @@ void PCLViewer::on_loadPcSequence_clicked()
 ///////////////////////////////////////////////////////////////////////////////////////
 void PCLViewer::on_clearSeq_clicked()
 {
-    loadSeqStr.pcSeq->points.clear();
     loadSeqStr.seqIdx = 0;
     loadSeqStr.loadFullSeq = false;
+    loadSeqStr.drawMatchIdx = 0;
     loadSeqStr.fullSeq.clear();
+    loadSeqStr.pcSeq->points.clear();
     viewer->updatePointCloud(loadSeqStr.pcSeq, "pointCloudSequence");
     ui->qvtkWidget->update();
 }

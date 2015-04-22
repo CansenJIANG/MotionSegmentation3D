@@ -83,6 +83,7 @@ struct str_loadSeq
     std::vector<PointCloudT> fullSeq;
     float fpsSeq;
     bool trackNext;
+    u16 drawMatchIdx;
 };
 
 
