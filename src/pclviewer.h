@@ -72,7 +72,9 @@ struct str_keyPts{
     uc8 viewSize;
 };
 
-
+/////////////////////////////////////////////////////////////////////////////////////
+/// define point cloud sequence analysis constructor
+/////////////////////////////////////////////////////////////////////////////////////
 struct str_loadSeq
 {
     bool seqMode;
@@ -90,6 +92,10 @@ struct str_loadSeq
     std::vector< std::vector<s16> > trkNextIdx;
 };
 
+struct str_drawShape
+{
+
+};
 
 namespace Ui
 {

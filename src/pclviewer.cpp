@@ -290,17 +290,6 @@ PCLViewer::lineWidthSlider(int value)
     {
         on_removeLines_clicked();
         on_drawMatches_clicked();
-//        float minDist = commonFunc::getMinimum(featDescrStr.goodMatchDist);
-
-//        for(size_t i=0; i<featDescrStr.goodMatchDist.size(); i++)
-//        {
-//            float scl = minDist / featDescrStr.goodMatchDist[i];
-//            float idxLineWidth = featDescrStr.lineWidth*scl;
-//            QString lineName = QString::number(i);
-//            viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_LINE_WIDTH,
-//                                            idxLineWidth, lineName.toStdString().c_str());
-//            ui->qvtkWidget->update ();
-//        }
     }
 }
 
@@ -2048,3 +2037,5 @@ void PCLViewer::on_trackNext_clicked()
     }
     trkFeatures2Frames();
 }
+
+
