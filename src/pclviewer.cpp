@@ -29,7 +29,7 @@ PCLViewer::PCLViewer (QWidget *parent) :
     ui->shiftX_val->setText("0.0");
     ui->shiftY_val->setText("0.0");
     ui->shiftZ_val->setText("0.0");
-    this->clipThd = 1.0;
+    this->clipThd = 1.5;
     this->shiftPC_X = 0.0;
     this->shiftPC_Y = 0.0;
     this->shiftPC_Z = 0.0;
@@ -85,7 +85,7 @@ PCLViewer::on_LoadPC_clicked()
 {
     // load *.pcd file
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),
-                                                    "/home/jiang/CvDataset/kinect_textured/", tr("Files (*.pcd)"));
+                                                    "/home/jiang/CvDataset/MovingCam2Objs/GoodSequence/", tr("Files (*.pcd)"));
     if(fileName.size()<1)
     {
         return;
@@ -165,7 +165,7 @@ PCLViewer::on_add_PC_clicked()
 {
     // load *.pcd file
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),
-                                                    "/home/jiang/CvDataset/kinect_textured/", tr("Files (*.pcd)"));
+                                                    "/home/jiang/CvDataset/MovingCam2Objs/GoodSequence/", tr("Files (*.pcd)"));
     if(fileName.size()<1)
     {
         return;
@@ -286,10 +286,21 @@ void
 PCLViewer::lineWidthSlider(int value)
 {
     this->featDescrStr.lineWidth = (f32)value;
-    if(featDescrStr.lineDrawOn)
+    if(featDescrStr.lineDrawOn!=0)
     {
         on_removeLines_clicked();
         on_drawMatches_clicked();
+//        float minDist = commonFunc::getMinimum(featDescrStr.goodMatchDist);
+
+//        for(size_t i=0; i<featDescrStr.goodMatchDist.size(); i++)
+//        {
+//            float scl = minDist / featDescrStr.goodMatchDist[i];
+//            float idxLineWidth = featDescrStr.lineWidth*scl;
+//            QString lineName = QString::number(i);
+//            viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_LINE_WIDTH,
+//                                            idxLineWidth, lineName.toStdString().c_str());
+//            ui->qvtkWidget->update ();
+//        }
     }
 }
 
@@ -424,7 +435,7 @@ void
 PCLViewer::on_saveFeatures_clicked()
 {
     QString fileName = QFileDialog::getSaveFileName(this, tr("Save File"),
-                                                    "/home/jiang/CvDataset/Kinect_MultiObj_Motions/features_.txt", tr("features (*.txt)"));
+                                                    "/home/jiang/CvDataset/MovingCam2Objs/GoodSequence/features_.txt", tr("features (*.txt)"));
 
     std::ofstream ofile;
     // create a new file or select the existing files to continue saving selected features
@@ -1435,34 +1446,27 @@ PCLViewer::on_extractEdge_1_clicked()
 ///////////////////////////////////////////////////////////////////////////////////////
 void
 PCLViewer::drawMatches(PointCloudT::Ptr &corr_1, PointCloudT::Ptr & corr_2,
-                       uc8 viewColor[])
+                       std::vector<f32> &matchDist, uc8 viewColor[])
 {
     PointT *pt_1 = &corr_1->points.at(0);
     PointT *pt_2 = &corr_2->points.at(0);
     u16 idxLine = 0;
-    float maxDist = -1000;
-    float minDist = 1000;
-    for(u16 i = 0; i<featDescrStr.matchDist.size(); i++)
-    {
-        if(featDescrStr.matchDist[i]>maxDist)
-        {
-            maxDist = featDescrStr.matchDist[i];
-        }
-        if(featDescrStr.matchDist[i]<minDist)
-        {
-            minDist = featDescrStr.matchDist[i];
-        }
-    }
-
+    float minDist = commonFunc::getMinimum(matchDist);
+    std::cout<<"loadSeqStr.drawMatchIdx: "<<loadSeqStr.drawMatchIdx<<std::endl;
     while( idxLine < corr_1->points.size() )
     {
+
         QString lineName = QString::number(idxLine+loadSeqStr.drawMatchIdx);
+//        if(loadSeqStr.seqMode){}
+
         // scale the line width with the descriptor distance
         // smaller distance, higher the value
-        float scl = minDist/featDescrStr.matchDist[idxLine];
+        float scl = minDist/matchDist[idxLine];
         float idxLineWidth = featDescrStr.lineWidth*scl;
-        viewer->addLine(*pt_1, *pt_2, viewColor[0], viewColor[1], viewColor[2],
-                lineName.toStdString().c_str());
+        std::cout<<"Add arrow "<< idxLine<<"; ";
+//        viewer->addArrow/*addLine*/(*pt_1, *pt_2, viewColor[0], viewColor[1], viewColor[2],
+//                viewColor[2], viewColor[1], viewColor[0],lineName.toStdString().c_str());
+        viewer->addLine(*pt_1, *pt_2, 0, 1, 0,/* 1, 0, 1,*/lineName.toStdString().c_str());
         viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_LINE_WIDTH,
                                             idxLineWidth, lineName.toStdString().c_str());
 
@@ -1471,7 +1475,7 @@ PCLViewer::drawMatches(PointCloudT::Ptr &corr_1, PointCloudT::Ptr & corr_2,
         ++idxLine;
     }
     featDescrStr.lineIdx = idxLine;
-    if(loadSeqStr.trackNext)
+    if(loadSeqStr.seqMode && loadSeqStr.trackNext)
     {
         loadSeqStr.drawMatchIdx += idxLine;
     }
@@ -1489,7 +1493,7 @@ void PCLViewer::on_drawMatches_clicked()
     }
     PointCloudT::Ptr corr_1 (new PointCloudT);
     PointCloudT::Ptr corr_2 (new PointCloudT);
-
+    std::vector<f32> *matchDist = &featDescrStr.goodMatchDist;
     if(featDescrStr.lineIdx != 0)
     {
         ui->removeLines->click();
@@ -1523,6 +1527,7 @@ void PCLViewer::on_drawMatches_clicked()
             {
                 corr_1->push_back(filteredKeyPts ->points[ featDescrStr.matchIdx1[i]]);
                 corr_2->push_back(filteredKeyPts2->points[ featDescrStr.matchIdx2[i]]);
+                matchDist->push_back(featDescrStr.matchDist[i]);
             }
         }
     }
@@ -1532,6 +1537,7 @@ void PCLViewer::on_drawMatches_clicked()
         {
             corr_1->push_back(filteredKeyPts ->points[ featDescrStr.matchIdx1[i]]);
             corr_2->push_back(filteredKeyPts2->points[ featDescrStr.matchIdx2[i]]);
+            matchDist->push_back(featDescrStr.matchDist[i]);
         }
     }
     // remove outliers with large Euclidean Distance
@@ -1552,6 +1558,7 @@ void PCLViewer::on_drawMatches_clicked()
             {
                 corr_1->points.erase(corr_1->points.begin()+i);
                 corr_2->points.erase(corr_2->points.begin()+i);
+                matchDist->erase(matchDist->begin()+i);
             }
             std::cout<<"bad matches removed!\n";
         }
@@ -1560,7 +1567,7 @@ void PCLViewer::on_drawMatches_clicked()
             <<", "<<corr_2->points.size()<<std::endl;
 //    pcl::io::savePCDFileASCII ("corr_ref.pcd", *corr_1);
 //    pcl::io::savePCDFileASCII ("corr_mot.pcd", *corr_2);
-    drawMatches(corr_1, corr_2, keyPtsStr.viewColor);
+    drawMatches(corr_1, corr_2, *matchDist,keyPtsStr.viewColor);
     featDescrStr.lineDrawOn = 1;
 }
 
@@ -1579,8 +1586,17 @@ void PCLViewer::on_removeLines_clicked()
         viewer->removeShape(lineName.toStdString().c_str());
     }
     featDescrStr.lineIdx = 0;
-    ui->qvtkWidget->update();
     featDescrStr.lineDrawOn = 0;
+    if(loadSeqStr.seqMode)
+    {
+        for(int idxLine = 0; idxLine<loadSeqStr.drawMatchIdx; ++idxLine)
+        {
+            QString lineName = QString::number(idxLine);
+            viewer->removeShape(lineName.toStdString().c_str());
+        }
+//        loadSeqStr.drawMatchIdx = 0;
+    }
+    ui->qvtkWidget->update();
 }
 
 void PCLViewer::on_pclRansac_clicked()
@@ -1623,7 +1639,7 @@ void PCLViewer::on_pclRansac_clicked()
     {
         ui->removeLines->click();
     }
-    drawMatches(corr_1, corr_2, keyPtsStr.viewColor);
+    drawMatches(corr_1, corr_2, featDescrStr.matchDist, keyPtsStr.viewColor);
 }
 
 void PCLViewer::on_comboBox_activated(int index)
@@ -1660,7 +1676,7 @@ void PCLViewer::on_loadSelectedFeat_clicked()
 {
     // load *.pcd file
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),
-                                                    "/home/jiang/CvDataset/kinect_textured/", tr("Files (*.pcd)"));
+                                                    "/home/jiang/CvDataset/MovingCam2Objs/GoodSequence/", tr("Files (*.pcd)"));
     if(fileName.size()<1)
     {
         return;
@@ -1686,7 +1702,7 @@ void PCLViewer::on_loadSelectedFeat_clicked()
 void PCLViewer::on_loadMatchIdx_clicked()
 {
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),
-                                                    "/home/jiang/bin/PosEstMovObj/", tr("Files (*.txt)"));
+                                                    "/home/jiang/CvDataset/MovingCam2Objs/GoodSequence/", tr("Files (*.txt)"));
     if(fileName.size()<1)
     {
         return;
@@ -1762,7 +1778,7 @@ void PCLViewer::on_clipPC_clicked()
 void PCLViewer::on_loadPcSequence_clicked()
 {
     loadSeqStr.pcdPath = QFileDialog::getExistingDirectory(this, tr("Open Directory"),
-                                                           "/home/jiang/CvDataset/MovingCam2Objs/",
+                                                           "/home/jiang/CvDataset/MovingCam2Objs/GoodSequence",
                                                            QFileDialog::ShowDirsOnly
                                                            | QFileDialog::DontResolveSymlinks);
     loadSeqStr.files = QDir(loadSeqStr.pcdPath).entryList(QDir::Files);
@@ -1771,6 +1787,7 @@ void PCLViewer::on_loadPcSequence_clicked()
     loadSeqStr.fpsSeq = 0;
     loadSeqStr.trackNext = false;
     loadSeqStr.loadFullSeq = false;
+    loadSeqStr.seqMode = true;
     loadSeqStr.drawMatchIdx = 0;
     loadSeqStr.repeatSeq = ui->loadSeqRepeatCkbox->checkState();
 
@@ -1849,7 +1866,8 @@ void PCLViewer::on_showNextSeq_clicked()
     pcl::io::loadPCDFile<PointT>(
                 (loadSeqStr.pcdPath+"/"+f.fileName()).toStdString().c_str(),
                 *loadSeqStr.pcSeq);
-    viewer->updatePointCloud(loadSeqStr.pcSeq, "pointCloudSequence");
+    viewer->updatePointCloud(loadSeqStr.pcSeq, "pointCloudSequence");\
+    ui->outputMsg->appendPlainText(f.fileName().toStdString().c_str());
     ui->qvtkWidget->update();
 }
 
@@ -1998,8 +2016,8 @@ void PCLViewer::trkFeatures2Frames()
     // filter key points
     on_filterKeypts_1_clicked();
     on_filterKeypts_2_clicked();
-    on_showFilteredKeypts_1_clicked();
-    on_showFilteredKeypts_2_clicked();
+//    on_showFilteredKeypts_1_clicked();
+//    on_showFilteredKeypts_2_clicked();
 
 
     // match key points
@@ -2007,7 +2025,7 @@ void PCLViewer::trkFeatures2Frames()
     ui->featureDescriptor->setCurrentIndex(3);
     on_matchKeypts_clicked();
     ui->goodMatches->setChecked(true);
-    on_showCloud_1_clicked();
+//    on_showCloud_1_clicked();
     on_drawMatches_clicked();
 
 

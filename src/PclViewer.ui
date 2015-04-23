@@ -78,7 +78,7 @@
         </size>
        </property>
        <property name="currentIndex">
-        <number>3</number>
+        <number>0</number>
        </property>
        <widget class="QWidget" name="tab_3">
         <attribute name="title">
@@ -585,7 +585,14 @@
              <string>clipping</string>
             </property>
            </widget>
-           <widget class="QLineEdit" name="clipThreshold"/>
+           <widget class="QLineEdit" name="clipThreshold">
+            <property name="text">
+             <string>1.5</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
           </widget>
          </item>
          <item row="9" column="0">
@@ -3874,7 +3881,7 @@
            </size>
           </property>
           <property name="text">
-           <string>0</string>
+           <string>10</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -4136,7 +4143,7 @@
            </size>
           </property>
           <property name="text">
-           <string>20</string>
+           <string>0</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>

@@ -44,6 +44,7 @@ struct str_featDescr{
     std::vector<u16> matchIdx1;
     std::vector<u16> matchIdx2;
     std::vector<f32> matchDist;
+    std::vector<f32> goodMatchDist;
     // state of drawing lines
     uc8 lineDrawOn;
     // draw line index
@@ -74,6 +75,7 @@ struct str_keyPts{
 
 struct str_loadSeq
 {
+    bool seqMode;
     u16 seqIdx;
     PointCloudT::Ptr pcSeq;
     bool repeatSeq;
@@ -84,6 +86,8 @@ struct str_loadSeq
     float fpsSeq;
     bool trackNext;
     u16 drawMatchIdx;
+    std::vector< std::vector<s16> > trkCurrIdx;
+    std::vector< std::vector<s16> > trkNextIdx;
 };
 
 
@@ -155,7 +159,7 @@ protected:
 
     // func to draw matching lines
     void drawMatches(PointCloudT::Ptr &cloud, PointCloudT::Ptr & cloud2,
-                     uc8 viewColor[]);
+                     std::vector<f32> &matchDist, uc8 viewColor[]);
 
     // func to detect the key points
     void detectKeypts(PointCloudT::Ptr &cloud, PointCloudT::Ptr &keyPts,

@@ -5,11 +5,15 @@
 namespace commonFunc
 {
     // overload func to calculate l2 norm
-    inline float l2norm(float x, float y, float z)
+    template<typename T>
+    inline float l2norm(T x, T y, T z)
     {   return std::sqrt(x*x + y*y +z*z);   }
 
-    inline float l2norm(float x, float y)
-    {   return std::sqrt(x*x + y*y);    }
+    template<typename T>
+    inline float l2norm(T x, T y)
+    {
+        return std::norm( std::complex<T>(x, y) );
+    }
 
     inline float l2norm(std::vector<float> vec)
     {
@@ -22,7 +26,15 @@ namespace commonFunc
 
     // return median value
     template<typename T>
-    T getMedian(std::vector<T> &input);
+    T getMedian(const std::vector<T> &v);
+    template<typename T>
+    T getMean(const std::vector<T> &v);
+    template <typename T>
+    inline T getMinimum(const std::vector<T> &v)
+    {return *std::min_element( v.begin(), v.end());}
+    template <typename T>
+    inline T getMaximum(const std::vector<T> &v)
+    {return *std::min_element( v.begin(), v.end() );}
 
     // func to generat radom sample indices of ransac
 
@@ -64,13 +76,13 @@ namespace commonFunc
 ///////////////////////////////////
 // Calculate the median value of matching pair distance;
 template<typename T>
-T getMedian(std::vector<T> &input)
+T getMedian(const std::vector<T> &v)
 {
     T median;
     std::vector<T> scores;
-    for(int i=0;i<input.size();i++)
+    for(int i=0;i<v.size();i++)
     {
-        scores.push_back(input[i]);
+        scores.push_back(v[i]);
     }
     size_t size = scores.size();
 
@@ -114,4 +126,14 @@ T getStdev(const std::vector<T> &v)
     return std::sqrt(sum_deviation/v.size());
 }
 
+//template <typename T>
+//T getMinimum(const std::vector<T> &v)
+//{
+//    return *std::min_element( v, v+v.size() );
+//}
+//template <typename T>
+//T getMaximum(const std::vector<T> &v)
+//{
+//    return *std::max_element( v, v+v.size() );
+//}
 #endif // COMMONFUNC_H
