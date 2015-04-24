@@ -336,6 +336,8 @@ private slots:
     void on_trackNext_clicked();
 
 
+    void on_trkFstFrame_clicked();
+
 private:
     Ui::PCLViewer *ui;
 
