@@ -18,16 +18,14 @@ PKGCONFIG = libfreenect
 
 SOURCES += src/main.cpp\
            src/pclviewer.cpp \
-           src/bkgmodel.cpp \
-           src/xxxxx.cpp \
-           src/extractFeatures.cpp
+           src/extractFeatures.cpp \
+    trk3dfeatures.cpp
 
 HEADERS  += src/pclviewer.h \
-            src/OctreeViewer.h \
-            src/bkgmodel.h \
             src/extractFeatures.h \
             src/commonFunc.h \
-            src/commonHeader.h
+            src/commonHeader.h \
+    trk3dfeatures.h
 
 FORMS    += src/PclViewer.ui
 

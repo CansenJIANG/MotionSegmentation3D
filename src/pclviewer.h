@@ -3,10 +3,7 @@
 
 // include common header files and data type configuration
 #include "commonFunc.h"
-
-//#include "../../JiangDLL/JiangDLL/jiangdll.h"
 #include "extractFeatures.h"
-
 #include <Eigen/Core>
 
 // Visualization Toolkit (VTK)
@@ -15,7 +12,7 @@
 /////////////////////////////////////////////////////////////////////////////////////
 /// define call back structure for point clicking selection
 /////////////////////////////////////////////////////////////////////////////////////
-struct callback_args{
+struct str_clickPts{
     // structure used to pass arguments to the callback function
     PointCloudT::Ptr clicked_points_3d;
     // pcl::visualization::PCLVisualizer::Ptr viewerPtr;
@@ -90,11 +87,14 @@ struct str_loadSeq
     u16 drawMatchIdx;
     std::vector< std::vector<s16> > trkCurrIdx;
     std::vector< std::vector<s16> > trkNextIdx;
+    std::vector< PointCloudT > trkCurrPts;
+    std::vector< PointCloudT > trkNextPts;
+    std::vector< std::vector<f32> > trkCorrDist;
 };
 
 struct str_drawShape
 {
-
+    uc8 color[3];
 };
 
 namespace Ui
@@ -113,8 +113,6 @@ public:
 public slots:
     // slider to change the size of point cloud
     void pSliderValueChanged (int value);
-    // slider to move point cloud along z axis
-    void movePcSlider (int value);
     // slider to change the line width
     void lineWidthSlider(int value);
 
@@ -148,7 +146,11 @@ protected:
     f32 shiftPC_Y;
     f32 shiftPC_Z;
 
+    // point cloud sequence analysis structure
     str_loadSeq loadSeqStr;
+
+    // drawing analysis
+    str_drawShape drawShapeStr;
 
     // Keypoint detector parameters structure
     struct str_keyPts keyPtsStr;
@@ -178,9 +180,11 @@ protected:
 
     // func to track feature points
     void trkFeatures2Frames(void);
+    void drawSeqMatches(void);
+    void removeSeqLines(void);
 
     // Add point picking callback to viewer:
-    struct callback_args cb_args;
+    struct str_clickPts clickPtsStr;
 
 private slots:
 
@@ -190,19 +194,11 @@ private slots:
     // click botton to load point cloud
     void on_LoadPC_clicked();
     void on_showCloud_1_clicked();
-
-    // click botton add multiple point cloud to viewer
     void on_add_PC_clicked();
     void on_showCloud_2_clicked();
 
     // check box to visualize point cloud color
     void on_chkbox_withColor_clicked();
-
-    // click botton to point cloud voxelization
-    void on_getVoxel_clicked();
-
-    // click botton to start kinect stream
-    void on_StartKinect_clicked();
 
     // click button to save selected features
     void on_saveFeatures_clicked();
@@ -338,6 +334,7 @@ private slots:
     void on_TrkFeatures_clicked();
 
     void on_trackNext_clicked();
+
 
 private:
     Ui::PCLViewer *ui;

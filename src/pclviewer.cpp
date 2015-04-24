@@ -1,11 +1,7 @@
 #include "pclviewer.h"
 #include "ui_PclViewer.h"
-#include "OctreeViewer.h"
-
 #include <fstream>
 #include <pcl/recognition/distance_map.h>
-
-//#include "../../JiangDLL/JiangDLL/jiangdll.h"
 
 /////////////////////////////////////////////////////////////////////////////////////
 /// Define PCLViewer
@@ -15,20 +11,15 @@ PCLViewer::PCLViewer (QWidget *parent) :
     ui (new Ui::PCLViewer)
 {
     ui->setupUi (this);
-    this->setWindowTitle ("PCL viewer");
+    this->setWindowTitle ("Pcl Viewer");
 
-    // Setup the cloud pointer
+    // Initialize point cloud container
     cloud.reset (new PointCloudT);
+    cloud->points.resize (0);
     cloud2.reset(new PointCloudT);
+    cloud2->points.resize (0);
 
-    // The number of points in the cloud
-    cloud->points.resize (200);
-
-    // initialize clipping threshold as 1.0m
-    ui->clipThreshold->setText("1.0");
-    ui->shiftX_val->setText("0.0");
-    ui->shiftY_val->setText("0.0");
-    ui->shiftZ_val->setText("0.0");
+    // initialize clipping threshold as 1.5m
     this->clipThd = 1.5;
     this->shiftPC_X = 0.0;
     this->shiftPC_Y = 0.0;
@@ -38,38 +29,31 @@ PCLViewer::PCLViewer (QWidget *parent) :
     viewer.reset (new pcl::visualization::PCLVisualizer ("viewer", false));
     ui->qvtkWidget->SetRenderWindow (viewer->getRenderWindow ());
     viewer->setupInteractor (ui->qvtkWidget->GetInteractor (), ui->qvtkWidget->GetRenderWindow ());
-    ui->qvtkWidget->update ();
 
     // Connect point size slider
     connect (ui->horizontalSlider_p, SIGNAL (valueChanged (int)), this, SLOT (pSliderValueChanged (int)));
-    connect (ui->movePcSlider, SIGNAL (valueChanged (int)), this, SLOT (movePcSlider (int)));
-    connect (ui->lineWidthSlider, SIGNAL (valueChanged (int)), this, SLOT (lineWidthSlider (int)));
     viewer->addPointCloud (cloud, "cloud");
     pSliderValueChanged (1);
-    movePcSlider(1);
+
+    // Connect matching line width slider
+    connect (ui->lineWidthSlider, SIGNAL (valueChanged (int)), this, SLOT (lineWidthSlider (int)));
     lineWidthSlider(1);
 
     // set camera position
     viewer->resetCamera ();
     viewer->initCameraParameters();
-    // Get Current View Pose
-    //    Eigen::Affine3f camPos = viewer->getViewerPose();
-    //    float *cPdata = camPos.data();
-    //    std::cout<<"camPos_1: "<<*(cPdata+1)<<" camPos_2: "<<*(cPdata)<<" camPos_3: "<<*(cPdata+2)<<std::endl;
     viewer->setCameraPosition(0, 0, 0,  -0.00723988,-0.999971, 0.0021689);
 
-    // add camera coordinate
-    //    viewer->addCoordinateSystem (0.01);
+    // set point color Red, Green, Blue
+    drawShapeStr.color[0] = 0;
+    drawShapeStr.color[1] = 255;
+    drawShapeStr.color[2] = 0;
 
-    // update viewer
+    // update
     ui->qvtkWidget->update ();
 
     // Output message
     ui->outputMsg->appendPlainText(QString("Program start ..."));
-
-    cb_args.ptColor[0] = 255;
-    cb_args.ptColor[0] = 0;
-    cb_args.ptColor[0] = 0;
 }
 
 PCLViewer::~PCLViewer ()
@@ -78,7 +62,7 @@ PCLViewer::~PCLViewer ()
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
-/// Define load point cloud function
+/// Define point cloud loading functions
 /////////////////////////////////////////////////////////////////////////////////////
 void
 PCLViewer::on_LoadPC_clicked()
@@ -157,9 +141,6 @@ PCLViewer::on_showCloud_1_clicked()
     ui->qvtkWidget->update();
 }
 
-/////////////////////////////////////////////////////////////////////////////////////
-/// func to add multiple point clouds
-/////////////////////////////////////////////////////////////////////////////////////
 void
 PCLViewer::on_add_PC_clicked()
 {
@@ -272,45 +253,6 @@ PCLViewer::pSliderValueChanged (int value)
     ui->qvtkWidget->update ();
 }
 
-/////////////////////////////////////////////////////////////////////////////////////
-/// Shift point cloud
-/////////////////////////////////////////////////////////////////////////////////////
-void
-PCLViewer::movePcSlider (int value)
-{
-    //    this->cloud
-    //    ui->qvtkWidget->update ();
-}
-
-void
-PCLViewer::lineWidthSlider(int value)
-{
-    this->featDescrStr.lineWidth = (f32)value;
-    if(featDescrStr.lineDrawOn!=0)
-    {
-        on_removeLines_clicked();
-        on_drawMatches_clicked();
-    }
-}
-
-
-/////////////////////////////////////////////////////////////////////////////////////
-/// func to voxelize the point cloud
-/////////////////////////////////////////////////////////////////////////////////////
-void
-PCLViewer::on_getVoxel_clicked()
-{
-
-}
-
-/////////////////////////////////////////////////////////////////////////////////////
-/// func to start the kinect streaming
-/////////////////////////////////////////////////////////////////////////////////////
-void
-PCLViewer::on_StartKinect_clicked()
-{
-
-}
 
 /////////////////////////////////////////////////////////////////////////////////////
 /// define click point event to select feature points on the point cloud
@@ -324,8 +266,9 @@ distanceL2(PointT p1, PointT p2)
 
 void
 clickPoint_callback (const pcl::visualization::PointPickingEvent& event, void* args)
+
 {
-    struct callback_args* data = (struct callback_args *) args;
+    struct str_clickPts* data = (struct str_clickPts *) args;
 
     // if clicking event is null, return.
     if (event.getPointIndex () == -1)
@@ -349,8 +292,8 @@ clickPoint_callback (const pcl::visualization::PointPickingEvent& event, void* a
     }
 
     // avoid multiple selections of same feature
-    f32        tree_distance = 100000.0;
-    uc8    save_feature  = 1;
+    f32 tree_distance = 100000.0;
+    uc8 save_feature  = 1;
     u16 i = featureNb, stop_loop = 50;
     PointT *tree_feature = &data->clicked_points_3d->points[featureNb];
     // variable stop_loop to avoid infinite searching of duplicate points
@@ -388,6 +331,7 @@ clickPoint_callback (const pcl::visualization::PointPickingEvent& event, void* a
     data->txtEditor->appendPlainText( QString(oMsg) );
 }
 
+
 /////////////////////////////////////////////////////////////////////////////////////
 /// func to get feature points from cloud
 /////////////////////////////////////////////////////////////////////////////////////
@@ -396,26 +340,29 @@ PCLViewer::on_getPoint_clicked()
 {
     // initialize the feature points
     featurePts.reset(new PointCloudT);
-    cb_args.clicked_points_3d = featurePts;
+    clickPtsStr.clicked_points_3d = featurePts;
+    clickPtsStr.viewerPtr  = viewer;
+    clickPtsStr.txtEditor  = ui->outputMsg;
+    clickPtsStr.ptColor[0] = drawShapeStr.color[0];
+    clickPtsStr.ptColor[1] = drawShapeStr.color[1];
+    clickPtsStr.ptColor[2] = drawShapeStr.color[2];
 
     // Output the number of selected features
-    if( cb_args.clicked_points_3d->size() )
+    if( clickPtsStr.clicked_points_3d->size() )
     {
         char oMsg[200];
-        std::sprintf(oMsg, "Size of selected features: %u.", cb_args.clicked_points_3d->size());
+        std::sprintf(oMsg, "Size of selected features: %u.", clickPtsStr.clicked_points_3d->size());
         ui->outputMsg->appendPlainText( QString(oMsg) );
     }
-    // point to interface point cloud visualizer
-    cb_args.viewerPtr = viewer;
-    cb_args.txtEditor = ui->outputMsg;
 
     // activate clickPoint callback function
-    viewer->registerPointPickingCallback (clickPoint_callback, (void*)&cb_args);
+    viewer->registerPointPickingCallback (clickPoint_callback, (void*)&clickPtsStr);
 
     // refresh point cloud viewer
     viewer->updatePointCloud (cloud, "cloud");
     ui->qvtkWidget->update ();
 }
+
 
 /////////////////////////////////////////////////////////////////////////////////////
 /// func to save selected features
@@ -444,10 +391,11 @@ PCLViewer::on_saveFeatures_clicked()
     }
     ofile.close();
 
+    // save click points as *.pcd file format
     pcl::io::savePCDFileASCII ("features_pcd.pcd", *featurePts);
-
     ui->outputMsg->appendPlainText( QString("Selected features are saved.") );
 }
+
 
 /////////////////////////////////////////////////////////////////////////////////////
 /// func to take a screenshot of the point cloud viewer
@@ -580,7 +528,7 @@ void PCLViewer::on_keyPtColor_activated(int index)
     {   this->keyPtsStr.viewColor[1] = 255;
         this->keyPtsStr.viewColor[2] = 255;                             break;}
     case 5: // Black
-    {                                                           break;}
+    {                                                                break;}
     case 6: // White
     {   this->keyPtsStr.viewColor[0] = 255;
         this->keyPtsStr.viewColor[1] = 255;
@@ -652,9 +600,9 @@ PCLViewer::on_keyPtDetectors_activated(int index)
     }
 
     // Setup the cloud pointer
-    keyPts.reset          (new PointCloudT);
-    filteredKeyPts. reset (new PointCloudT);
-    featureDetector  = new extractFeatures;
+    keyPts.reset(new PointCloudT);
+    filteredKeyPts.reset(new PointCloudT);
+    featureDetector = new extractFeatures;
 
     // Initialize parameters
     std::memset(&keyPtsStr.params, 0, sizeof(keyPtsStr.params));
@@ -873,7 +821,6 @@ PCLViewer::detectKeypts(PointCloudT::Ptr &cloud, PointCloudT::Ptr &keyPts,
     }
 
     // draw key points and the amount
-    //    this->drawKeyPts(keyPts, keyPtsStr.name, keyPtsStr.viewColor, keyPtsStr.viewSize);
     ui->outputMsg->appendPlainText( QString(oMsg) );
 }
 
@@ -990,11 +937,6 @@ PCLViewer::filterKeyPts(PointCloudT::Ptr &cloud, PointCloudT::Ptr &keyPts,
 
     // remove non exist keypoints generated from voxel filtering
     filteredKeyPts = fDetector->removeNon_exist(keyPts, filteredKeyPts);
-
-
-    // draw key points and the amount
-    //    this->drawKeyPts(filteredKeyPts, keyPtsStr.filteredName,
-    //                        keyPtsStr.viewColor, keyPtsStr.viewSize);
 
     // output info
     char oMsg[200];
@@ -1116,8 +1058,6 @@ PCLViewer::on_featureDescriptor_activated(int index)
     this->featDescrStr.lineIdx       = 0;
     this->featDescrStr.viewSize      = 10;
     this->featDescrStr.detectorIdx   = (uc8) index;
-    std::cout<<"\n"<<index<<" descriptor selected\n";
-    std::cout<<"\n"<<featDescrStr.detectorIdx<<" descriptor selected\n";
     this->featDescrStr.matchIdx1.resize(0);
     this->featDescrStr.matchIdx2.resize(0);
 
@@ -1215,18 +1155,13 @@ PCLViewer::on_matchKeypts_clicked()
     if(filteredKeyPts2->points.size()<1)
     {   pcl::copyPointCloud(*keyPts2, *filteredKeyPts2);  }
 
-    uc8 matchesFound = 0;
-    std::cout<<"\n"<<(int)this->featDescrStr.detectorIdx<<" descriptor selected\n";
-
-
-
     pcl::io::savePCDFileASCII ("filteredKeyPts.pcd", *filteredKeyPts);
     pcl::io::savePCDFileASCII ("filteredKeyPts2.pcd", *filteredKeyPts2);
 
+    uc8 matchesFound = 0;
     switch ( (int) this->featDescrStr.detectorIdx) {
     case 1: // RIFT descriptor
     {
-        std::cout<<"compute RIFT descriptor\n";
         // construct descriptors
         pcl::PointCloud<RIFT32>::Ptr riftCloud_1 (new pcl::PointCloud<RIFT32>);
         pcl::PointCloud<RIFT32>::Ptr riftCloud_2 (new pcl::PointCloud<RIFT32>);
@@ -1237,34 +1172,6 @@ PCLViewer::on_matchKeypts_clicked()
         riftCloud_2 = featureDetector->RIFTcolorDescriptor(cloud2, filteredKeyPts2,
                                                            this->featDescrStr.params);
 
-        // write out the descriptors
-        {
-            std::ofstream riftDesc_1, riftDesc_2;
-            riftDesc_1.open ("riftDesc_1.txt");
-            for(int i_1 = 0; i_1<riftCloud_1->points.size();i_1++)
-            {
-                RIFT32 desc_i = riftCloud_1->at(i_1);
-                for(int j_1 = 0; j_1<desc_i.descriptorSize(); j_1++)
-                {
-                    riftDesc_1 << desc_i.histogram[j_1] <<" ";
-                }
-                riftDesc_1 << "\n";
-            }
-            riftDesc_1.close();
-
-            riftDesc_2.open ("riftDesc_2.txt");
-            for(int i_1 = 0; i_1<riftCloud_2->points.size();i_1++)
-            {
-                RIFT32 desc_i = riftCloud_2->at(i_1);
-                for(int j_1 = 0; j_1<desc_i.descriptorSize(); j_1++)
-                {
-                    riftDesc_2 << desc_i.histogram[j_1] <<" ";
-                }
-                riftDesc_2 << "\n";
-            }
-            riftDesc_2.close();
-        }
-
         matchesFound = featureDetector->crossMatching(riftCloud_1, riftCloud_2,
                                                       &featDescrStr.matchIdx1, &featDescrStr.matchIdx2);
 
@@ -1274,48 +1181,15 @@ PCLViewer::on_matchKeypts_clicked()
     }
     case 2:
     {
-        std::cout<<"compute SHOT 152 descriptor\n";
         // construct descriptors
-        pcl::PointCloud<SHOT352>::Ptr Shot352Cloud_1;// (new pcl::PointCloud<SHOT352>);
-        pcl::PointCloud<SHOT352>::Ptr Shot352Cloud_2;// (new pcl::PointCloud<SHOT352>);
+        pcl::PointCloud<SHOT352>::Ptr Shot352Cloud_1;
+        pcl::PointCloud<SHOT352>::Ptr Shot352Cloud_2;
 
         Shot352Cloud_1 = featureDetector->Shot352Descriptor(cloud, filteredKeyPts,
                                                             this->featDescrStr.params);
 
         Shot352Cloud_2 = featureDetector->Shot352Descriptor(cloud2, filteredKeyPts2,
                                                             this->featDescrStr.params);
-
-        // write out the descriptors
-        {
-            std::ofstream Shot352Desc_1, Shot352Desc_2;
-            Shot352Desc_1.open ("Shot352Desc_1.txt");
-            for(int i_1 = 0; i_1<Shot352Cloud_1->points.size();i_1++)
-            {
-                SHOT352 desc_i = Shot352Cloud_1->at(i_1);
-                for(int j_1 = 0; j_1<desc_i.descriptorSize(); j_1++)
-                {
-                    Shot352Desc_1 << desc_i.descriptor[j_1] <<" ";
-                }
-                Shot352Desc_1 << "\n";
-            }
-            Shot352Desc_1.close();
-
-            Shot352Desc_2.open ("Shot352Desc_2.txt");
-            for(int i_1 = 0; i_1<Shot352Cloud_2->points.size();i_1++)
-            {
-                SHOT352 desc_i = Shot352Cloud_2->at(i_1);
-                for(int j_1 = 0; j_1<desc_i.descriptorSize(); j_1++)
-                {
-                    Shot352Desc_2 << desc_i.descriptor[j_1] <<" ";
-                }
-                Shot352Desc_2 << "\n";
-            }
-            Shot352Desc_2.close();
-        }
-
-        std::cout<<"shot descriptor computed successfully\n";
-        std::cout<<"size of descriptor 1: "<<Shot352Cloud_1->points.size()<<std::endl;
-        std::cout<<"size of descriptor 2: "<<Shot352Cloud_2->points.size()<<std::endl;
 
         matchesFound = featureDetector->crossMatching(Shot352Cloud_1, Shot352Cloud_2,
                                                       &featDescrStr.matchIdx1, &featDescrStr.matchIdx2);
@@ -1326,10 +1200,9 @@ PCLViewer::on_matchKeypts_clicked()
     }
     case 3:
     {
-        std::cout<<"compute SHOT 1344 descriptor\n";
         // construct descriptors
-        pcl::PointCloud<SHOT1344>::Ptr Shot1344Cloud_1;// (new pcl::PointCloud<SHOT352>);
-        pcl::PointCloud<SHOT1344>::Ptr Shot1344Cloud_2;// (new pcl::PointCloud<SHOT352>);
+        pcl::PointCloud<SHOT1344>::Ptr Shot1344Cloud_1;
+        pcl::PointCloud<SHOT1344>::Ptr Shot1344Cloud_2;
 
         Shot1344Cloud_1 = featureDetector->Shot1344Descriptor(cloud, filteredKeyPts,
                                                               this->featDescrStr.params);
@@ -1337,38 +1210,7 @@ PCLViewer::on_matchKeypts_clicked()
         Shot1344Cloud_2 = featureDetector->Shot1344Descriptor(cloud2, filteredKeyPts2,
                                                               this->featDescrStr.params);
 
-        // write out the descriptors
-        if(0)
-        {
-            std::ofstream Shot1344Desc_1, Shot1344Desc_2;
-            Shot1344Desc_1.open ("Shot1344Desc_1.txt");
-            for(int i_1 = 0; i_1<Shot1344Cloud_1->points.size();i_1++)
-            {
-                SHOT1344 desc_i = Shot1344Cloud_1->at(i_1);
-                for(int j_1 = 0; j_1<desc_i.descriptorSize(); j_1++)
-                {
-                    Shot1344Desc_1 << desc_i.descriptor[j_1] <<" ";
-                }
-                Shot1344Desc_1 << "\n";
-            }
-            Shot1344Desc_1.close();
-
-            Shot1344Desc_2.open ("Shot1344Desc_2.txt");
-            for(int i_1 = 0; i_1<Shot1344Cloud_2->points.size();i_1++)
-            {
-                SHOT1344 desc_i = Shot1344Cloud_2->at(i_1);
-                for(int j_1 = 0; j_1<desc_i.descriptorSize(); j_1++)
-                {
-                    Shot1344Desc_2 << desc_i.descriptor[j_1] <<" ";
-                }
-                Shot1344Desc_2 << "\n";
-            }
-            Shot1344Desc_2.close();
-        }
-//        std::cout<<"shot descriptor computed successfully\n";
-//        std::cout<<"size of descriptor 1: "<<Shot1344Cloud_1->points.size()<<std::endl;
-//        std::cout<<"size of descriptor 2: "<<Shot1344Cloud_2->points.size()<<std::endl;
-
+        // match keypoints
         matchesFound = featureDetector->crossMatching(Shot1344Cloud_1, Shot1344Cloud_2,
                                                       &featDescrStr.matchIdx1, &featDescrStr.matchIdx2,
                                                       &featDescrStr.matchDist);
@@ -1391,7 +1233,6 @@ PCLViewer::on_matchKeypts_clicked()
     }else
     {
         ui->outputMsg->appendPlainText( QString("no matches fould.") );
-        std::cout<<"finding match error \n";
         return;
     }
 
@@ -1428,7 +1269,19 @@ PCLViewer::on_extractEdge_1_clicked()
 {
 
 }
-
+/////////////////////////////////////////////////////////////////////////////////////
+/// Change width of matching lines
+/////////////////////////////////////////////////////////////////////////////////////
+void
+PCLViewer::lineWidthSlider(int value)
+{
+    this->featDescrStr.lineWidth = (f32)value;
+    if(featDescrStr.lineDrawOn!=0)
+    {
+        on_removeLines_clicked();
+        on_drawMatches_clicked();
+    }
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////
 ///// draw matching lines
@@ -1441,28 +1294,28 @@ PCLViewer::drawMatches(PointCloudT::Ptr &corr_1, PointCloudT::Ptr & corr_2,
     PointT *pt_2 = &corr_2->points.at(0);
     u16 idxLine = 0;
     float minDist = commonFunc::getMinimum(matchDist);
-    std::cout<<"loadSeqStr.drawMatchIdx: "<<loadSeqStr.drawMatchIdx<<std::endl;
-    while( idxLine < corr_1->points.size() )
-    {
+    if(!loadSeqStr.trackNext)
+        while( idxLine < corr_1->points.size() )
+        {
 
-        QString lineName = QString::number(idxLine+loadSeqStr.drawMatchIdx);
-//        if(loadSeqStr.seqMode){}
+            QString lineName = QString::number(idxLine+loadSeqStr.drawMatchIdx);
+            //        if(loadSeqStr.seqMode){}
 
-        // scale the line width with the descriptor distance
-        // smaller distance, higher the value
-        float scl = minDist/matchDist[idxLine];
-        float idxLineWidth = featDescrStr.lineWidth*scl;
-        std::cout<<"Add arrow "<< idxLine<<"; ";
-//        viewer->addArrow/*addLine*/(*pt_1, *pt_2, viewColor[0], viewColor[1], viewColor[2],
-//                viewColor[2], viewColor[1], viewColor[0],lineName.toStdString().c_str());
-        viewer->addLine(*pt_1, *pt_2, 0, 1, 0,/* 1, 0, 1,*/lineName.toStdString().c_str());
-        viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_LINE_WIDTH,
-                                            idxLineWidth, lineName.toStdString().c_str());
+            // scale the line width with the descriptor distance
+            // smaller distance, higher the value
+            float scl = minDist/matchDist[idxLine];
+            float idxLineWidth = featDescrStr.lineWidth*scl;
 
-        ++pt_1;
-        ++pt_2;
-        ++idxLine;
-    }
+            //        viewer->addArrow/*addLine*/(*pt_1, *pt_2, viewColor[0], viewColor[1], viewColor[2],
+            //                viewColor[2], viewColor[1], viewColor[0],lineName.toStdString().c_str());
+            viewer->addLine(*pt_1, *pt_2, 0, 1, 0,/* 1, 0, 1,*/lineName.toStdString().c_str());
+            viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_LINE_WIDTH,
+                                                idxLineWidth, lineName.toStdString().c_str());
+
+            ++pt_1;
+            ++pt_2;
+            ++idxLine;
+        }
     featDescrStr.lineIdx = idxLine;
     if(loadSeqStr.seqMode && loadSeqStr.trackNext)
     {
@@ -1476,8 +1329,13 @@ PCLViewer::drawMatches(PointCloudT::Ptr &corr_1, PointCloudT::Ptr & corr_2,
 ///////////////////////////////////////////////////////////////////////////////////////
 void PCLViewer::on_drawMatches_clicked()
 {
-    if(featDescrStr.matchIdx1.size()<1)
+    if(featDescrStr.matchIdx1.size()<1 && !loadSeqStr.seqMode)
     {
+        return;
+    }
+    if(!loadSeqStr.trackNext && loadSeqStr.seqMode)
+    {
+        drawSeqMatches();
         return;
     }
     PointCloudT::Ptr corr_1 (new PointCloudT);
@@ -1487,31 +1345,15 @@ void PCLViewer::on_drawMatches_clicked()
     {
         ui->removeLines->click();
     }
-    std::cout<<"size of matchIdx1: "<<featDescrStr.matchIdx1.size()
-            <<"size of matchIdx2: "<<featDescrStr.matchIdx2.size()<<"\n";
 
     f32 medianDescDist = getMedian(featDescrStr.matchDist);
-//    std::cout<<"median dist: "<<medianDescDist<<"\n";
-//    f32 meanDist = getMean(featDescrStr.matchDist);
-//    std::cout<<"mean dist: "<<meanDist<<"\n";
-//    f32 stdevDist = getStdev(featDescrStr.matchDist, meanDist);
-//    std::cout<<"stdevDist: "<<stdevDist<<"\n";
 
-//    std::ofstream matchDistFile;
-//    matchDistFile.open ("matchDistFile.txt");
-//    for(int i_1 = 0; i_1<featDescrStr.matchDist.size();i_1++)
-//    {
-
-//            matchDistFile << featDescrStr.matchDist[i_1] <<"\n";
-//    }
-//    matchDistFile.close();
 
     // get correspondences
     if(ui->goodMatches->checkState())
     {// draw half of the good matches
         for(u16 i=0; i<featDescrStr.matchIdx1.size(); ++i)
         {
-            std::cout<<"d = "<<featDescrStr.matchDist[i]<<"; ";
             if(featDescrStr.matchDist[i]< medianDescDist)
             {
                 corr_1->push_back(filteredKeyPts ->points[ featDescrStr.matchIdx1[i]]);
@@ -1549,15 +1391,106 @@ void PCLViewer::on_drawMatches_clicked()
                 corr_2->points.erase(corr_2->points.begin()+i);
                 matchDist->erase(matchDist->begin()+i);
             }
-            std::cout<<"bad matches removed!\n";
         }
     }
-    std::cout<<"size of good matches: "<<corr_1->points.size()
-            <<", "<<corr_2->points.size()<<std::endl;
-//    pcl::io::savePCDFileASCII ("corr_ref.pcd", *corr_1);
-//    pcl::io::savePCDFileASCII ("corr_mot.pcd", *corr_2);
-    drawMatches(corr_1, corr_2, *matchDist,keyPtsStr.viewColor);
-    featDescrStr.lineDrawOn = 1;
+
+    loadSeqStr.trkCurrPts.push_back(*corr_1);
+    loadSeqStr.trkNextPts.push_back(*corr_2);
+    loadSeqStr.trkCorrDist.push_back(*matchDist);
+
+    if(loadSeqStr.trackNext)
+    {
+        drawSeqMatches();
+    }
+    else
+    {
+        drawMatches(corr_1, corr_2, *matchDist,keyPtsStr.viewColor);
+        featDescrStr.lineDrawOn = 1;
+    }
+}
+
+void PCLViewer::removeSeqLines()
+{
+    for(size_t i=0; i<loadSeqStr.trkCurrPts.size(); i++)
+    {
+        QString trkPtCurrName = "trkPtsCurr_" + QString::number(i);
+        QString trkPtNextName = "trkPtsNext_" + QString::number(i);
+        viewer->removePointCloud(trkPtCurrName.toStdString().c_str());
+        viewer->removePointCloud(trkPtNextName.toStdString().c_str());
+    }
+    for(size_t i=0; i<loadSeqStr.drawMatchIdx; i++)
+    {
+        QString lineName = "trkSeqLine_" + QString::number(i);
+        viewer->removeShape(lineName.toStdString().c_str());
+    }
+}
+
+void PCLViewer::drawSeqMatches()
+{
+    if(!loadSeqStr.seqMode | loadSeqStr.trkCorrDist.size()<1)
+    {
+        return;
+    }
+    removeSeqLines();
+    PointCloudT::Ptr corr_1 (new PointCloudT);
+    PointCloudT::Ptr corr_2 (new PointCloudT);
+    std::vector<f32> matchDist;
+    u16 seqMatchIdx = 0;
+    for(size_t i=0; i<loadSeqStr.trkCurrPts.size(); i++)
+    {
+        *corr_1   = loadSeqStr.trkCurrPts.at(i);
+        *corr_2   = loadSeqStr.trkNextPts.at(i);
+        matchDist = loadSeqStr.trkCorrDist.at(i);
+        PointT *pt_1 = &corr_1->points.at(0);
+        PointT *pt_2 = &corr_2->points.at(0);
+        QString trkPtCurrName = "trkPtsCurr_" + QString::number(i);
+        QString trkPtNextName = "trkPtsNext_" + QString::number(i);
+        // color setting
+        if(i%2)
+        {
+            PointColor color(corr_1, 0, 255, 0);
+            viewer->addPointCloud(corr_1, color, trkPtCurrName.toStdString().c_str());
+            viewer->addPointCloud(corr_2, color, trkPtNextName.toStdString().c_str());
+        }else
+        {
+            PointColor color(corr_1, 255, 0, 0);
+            viewer->addPointCloud(corr_1, color, trkPtCurrName.toStdString().c_str());
+            viewer->addPointCloud(corr_2, color, trkPtNextName.toStdString().c_str());
+        }
+        viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE,
+                                                 10, trkPtCurrName.toStdString().c_str());
+        viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE,
+                                                 10, trkPtNextName.toStdString().c_str());
+        float minDist = commonFunc::getMinimum(matchDist);
+
+        for(size_t j=0; j< corr_1->points.size();)
+        {
+            QString lineName = "trkSeqLine_" + QString::number(seqMatchIdx);
+
+            // scale the line width with the descriptor distance
+            // smaller distance, higher the value
+            float scl = minDist/matchDist[j];
+            float idxLineWidth = featDescrStr.lineWidth*scl;
+
+            //        viewer->addArrow(*pt_1, *pt_2, viewColor[0], viewColor[1], viewColor[2],
+            //                viewColor[2], viewColor[1], viewColor[0],lineName.toStdString().c_str());
+            if(i%2)
+            {
+                viewer->addLine(*pt_1, *pt_2, 0, 1, 0,lineName.toStdString().c_str());
+            }
+            else{
+                viewer->addLine(*pt_1, *pt_2, 1, 0, 0,lineName.toStdString().c_str());
+            }
+            viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_LINE_WIDTH,
+                                                idxLineWidth, lineName.toStdString().c_str());
+
+            ++j;
+            ++pt_1;
+            ++pt_2;
+            ++seqMatchIdx;
+        }
+        ui->qvtkWidget->update();
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -1583,7 +1516,6 @@ void PCLViewer::on_removeLines_clicked()
             QString lineName = QString::number(idxLine);
             viewer->removeShape(lineName.toStdString().c_str());
         }
-//        loadSeqStr.drawMatchIdx = 0;
     }
     ui->qvtkWidget->update();
 }
@@ -1633,31 +1565,31 @@ void PCLViewer::on_pclRansac_clicked()
 
 void PCLViewer::on_comboBox_activated(int index)
 {
-    cb_args.ptColor[0] = 0;
-    cb_args.ptColor[1] = 0;
-    cb_args.ptColor[2] = 0;
+    clickPtsStr.ptColor[0] = 0;
+    clickPtsStr.ptColor[1] = 0;
+    clickPtsStr.ptColor[2] = 0;
     switch(index)
     {
     case 0: // Red
-    {   cb_args.ptColor[0] = 255;                             break;}
+    {   clickPtsStr.ptColor[0] = 255;                             break;}
     case 1: // Green
-    {   cb_args.ptColor[1] = 255;                             break;}
+    {   clickPtsStr.ptColor[1] = 255;                             break;}
     case 2: // Blue
-    {   cb_args.ptColor[2] = 255;                             break;}
+    {   clickPtsStr.ptColor[2] = 255;                             break;}
     case 3: // Cyan
-    {   cb_args.ptColor[0] = 255;
-        cb_args.ptColor[2] = 255;                             break;}
+    {   clickPtsStr.ptColor[0] = 255;
+        clickPtsStr.ptColor[2] = 255;                             break;}
     case 4: // Magenta
-    {   cb_args.ptColor[1] = 255;
-        cb_args.ptColor[2] = 255;                               break;}
+    {   clickPtsStr.ptColor[1] = 255;
+        clickPtsStr.ptColor[2] = 255;                               break;}
     case 5: // Black
     {                                                          break;}
     case 6: // White
-    {   cb_args.ptColor[0] = 255;
-        cb_args.ptColor[1] = 255;
-        cb_args.ptColor[2] = 255;                             break;}
+    {   clickPtsStr.ptColor[0] = 255;
+        clickPtsStr.ptColor[1] = 255;
+        clickPtsStr.ptColor[2] = 255;                             break;}
     default:
-    {   cb_args.ptColor[0] = 255;                             break;}
+    {   clickPtsStr.ptColor[0] = 255;                             break;}
     }
 }
 
@@ -1679,8 +1611,8 @@ void PCLViewer::on_loadSelectedFeat_clicked()
     //    viewer->addPointCloud(feature_cloud,cloudName);
 
     // draw clicked points in green:
-    PointColor clickedColor (feature_cloud, cb_args.ptColor[0],
-            cb_args.ptColor[1], cb_args.ptColor[2]);
+    PointColor clickedColor (feature_cloud, clickPtsStr.ptColor[0],
+            clickPtsStr.ptColor[1], clickPtsStr.ptColor[2]);
     //    data->viewerPtr->removePointCloud("selected_features");
     viewer->addPointCloud(feature_cloud, clickedColor, cloudName);
     viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE,
@@ -1994,8 +1926,8 @@ void PCLViewer::trkFeatures2Frames()
     on_clipPC_clicked();
 
     // shift point cloud for better visualization
-//    shiftPC_Z = 0.2;
-//    on_transformPc_clicked();
+    //    shiftPC_Z = 0.2;
+    //    on_transformPc_clicked();
 
     // detect key points
     on_keyPtDetectors_activated(2);
@@ -2005,8 +1937,8 @@ void PCLViewer::trkFeatures2Frames()
     // filter key points
     on_filterKeypts_1_clicked();
     on_filterKeypts_2_clicked();
-//    on_showFilteredKeypts_1_clicked();
-//    on_showFilteredKeypts_2_clicked();
+    //    on_showFilteredKeypts_1_clicked();
+    //    on_showFilteredKeypts_2_clicked();
 
 
     // match key points
@@ -2014,9 +1946,9 @@ void PCLViewer::trkFeatures2Frames()
     ui->featureDescriptor->setCurrentIndex(3);
     on_matchKeypts_clicked();
     ui->goodMatches->setChecked(true);
-//    on_showCloud_1_clicked();
+    //    on_showCloud_1_clicked();
     on_drawMatches_clicked();
-
+    //    drawSeqMatches();
 
     // update point cloud viewer
     viewer->updatePointCloud (cloud, "cloud");
@@ -2039,3 +1971,160 @@ void PCLViewer::on_trackNext_clicked()
 }
 
 
+void PCLViewer::on_trkFstFrame_clicked()
+{
+    s16 trkEndIdx = ui->trkEndIdx->text().toInt();
+    if( ++loadSeqStr.seqIdx < trkEndIdx)
+    {
+        loadSeqStr.trackNext = true;
+    }else
+    {
+        loadSeqStr.trackNext = false;
+    }
+
+    if(!loadSeqStr.trackNext) return;
+
+    // update point cloud
+    pcl::copyPointCloud(*cloud2, *cloud);
+    pcl::copyPointCloud(*keyPts2, *keyPts);
+    pcl::copyPointCloud(*featurePts2, *featurePts);
+
+    cloud2.reset(new PointCloudT);
+    *cloud2 = loadSeqStr.fullSeq.at(loadSeqStr.seqIdx+1);
+    std::vector<s16> nanIdx;
+    pcl::removeNaNFromPointCloud(*cloud2,*cloud2, nanIdx);
+    nanIdx.clear();
+    on_clipPC_clicked();
+
+    // detect key points
+    on_keyPtDetectors_activated(2);
+    ui->keyPtDetectors->setCurrentIndex(2);
+    on_runKeyPtsDetector_2_clicked();
+    // filter key points
+    on_filterKeypts_2_clicked();
+
+    // match key points
+    on_featureDescriptor_activated(3);
+    ui->featureDescriptor->setCurrentIndex(3);
+
+    // matching with new frame
+    trkRefMatches();
+
+    ui->goodMatches->setChecked(true);
+    //    on_showCloud_1_clicked();
+    on_drawMatches_clicked();
+    //    drawSeqMatches();
+
+    // update point cloud viewer
+    viewer->updatePointCloud (cloud, "cloud");
+    viewer->updatePointCloud (cloud2, "cloud2");
+    ui->qvtkWidget->update();
+
+    loadSeqStr.trackNext = false;
+}
+
+
+void
+PCLViewer::trkRefMatches()
+{
+    featDescrStr.matchIdx1.clear();
+    std::copy(featDescrStr.matchIdx2.begin(), featDescrStr.matchIdx2.end(),
+              featDescrStr.matchIdx1);
+
+    featDescrStr.matchIdx2.clear();
+
+    if(keyPts->points.size() <1 || keyPts2->points.size()< 1)
+    {
+        // output info
+        ui->outputMsg->appendPlainText( QString("Key points are not computed.") );
+        return;
+    }
+
+    // if keypoint filtering not activated, compute descriptor for all key points
+    if(filteredKeyPts->points.size()<1)
+    {   pcl::copyPointCloud(*keyPts, *filteredKeyPts);    }
+    if(filteredKeyPts2->points.size()<1)
+    {   pcl::copyPointCloud(*keyPts2, *filteredKeyPts2);  }
+
+    pcl::io::savePCDFileASCII ("filteredKeyPts.pcd", *filteredKeyPts);
+    pcl::io::savePCDFileASCII ("filteredKeyPts2.pcd", *filteredKeyPts2);
+
+    uc8 matchesFound = 0;
+    switch ( (int) this->featDescrStr.detectorIdx) {
+    case 1: // RIFT descriptor
+    {
+        // construct descriptors
+        pcl::PointCloud<RIFT32>::Ptr riftCloud_1 (new pcl::PointCloud<RIFT32>);
+        pcl::PointCloud<RIFT32>::Ptr riftCloud_2 (new pcl::PointCloud<RIFT32>);
+
+        riftCloud_1 = featureDetector->RIFTcolorDescriptor(cloud, filteredKeyPts,
+                                                           this->featDescrStr.params);
+
+        riftCloud_2 = featureDetector->RIFTcolorDescriptor(cloud2, filteredKeyPts2,
+                                                           this->featDescrStr.params);
+
+        matchesFound = featureDetector->crossMatching(riftCloud_1, riftCloud_2,
+                                                      &featDescrStr.matchIdx1, &featDescrStr.matchIdx2);
+
+        // output info
+        ui->outputMsg->appendPlainText( QString("RIFT descriptor computed.") );
+        break;
+    }
+    case 2:
+    {
+        // construct descriptors
+        pcl::PointCloud<SHOT352>::Ptr Shot352Cloud_1;
+        pcl::PointCloud<SHOT352>::Ptr Shot352Cloud_2;
+
+        Shot352Cloud_1 = featureDetector->Shot352Descriptor(cloud, filteredKeyPts,
+                                                            this->featDescrStr.params);
+
+        Shot352Cloud_2 = featureDetector->Shot352Descriptor(cloud2, filteredKeyPts2,
+                                                            this->featDescrStr.params);
+
+        matchesFound = featureDetector->crossMatching(Shot352Cloud_1, Shot352Cloud_2,
+                                                      &featDescrStr.matchIdx1, &featDescrStr.matchIdx2);
+
+        // output info
+        ui->outputMsg->appendPlainText( QString("SHOT352 descriptor computed.") );
+        break;
+    }
+    case 3:
+    {
+        // construct descriptors
+        pcl::PointCloud<SHOT1344>::Ptr Shot1344Cloud_1;
+        pcl::PointCloud<SHOT1344>::Ptr Shot1344Cloud_2;
+
+        Shot1344Cloud_1 = featureDetector->Shot1344Descriptor(cloud, filteredKeyPts,
+                                                              this->featDescrStr.params);
+
+        Shot1344Cloud_2 = featureDetector->Shot1344Descriptor(cloud2, filteredKeyPts2,
+                                                              this->featDescrStr.params);
+
+        // match keypoints
+        matchesFound = featureDetector->crossMatching(Shot1344Cloud_1, Shot1344Cloud_2,
+                                                      &featDescrStr.matchIdx1, &featDescrStr.matchIdx2,
+                                                      &featDescrStr.matchDist);
+
+        // output info
+        ui->outputMsg->appendPlainText( QString("SHOT1344 descriptor computed.") );
+        break;
+    }
+    default:
+        break;
+    }
+
+    // match feature descriptors
+    if( matchesFound )
+    {
+        // output info
+        char oMsg[200];
+        std::sprintf(oMsg, "%d matches found.", featDescrStr.matchIdx1.size());
+        ui->outputMsg->appendPlainText( QString(oMsg) );
+    }else
+    {
+        ui->outputMsg->appendPlainText( QString("no matches fould.") );
+        return;
+    }
+
+}
