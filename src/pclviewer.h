@@ -9,6 +9,8 @@
 // Visualization Toolkit (VTK)
 #include <vtkRenderWindow.h>
 
+//#include "trk3dfeatures.h"
+
 /////////////////////////////////////////////////////////////////////////////////////
 /// define call back structure for point clicking selection
 /////////////////////////////////////////////////////////////////////////////////////
@@ -85,11 +87,14 @@ struct str_loadSeq
     float fpsSeq;
     bool trackNext;
     u16 drawMatchIdx;
-    std::vector< std::vector<s16> > trkCurrIdx;
-    std::vector< std::vector<s16> > trkNextIdx;
+    std::vector< std::vector<u16> > trkCurrIdx;
+    std::vector< std::vector<u16> > trkNextIdx;
     std::vector< PointCloudT > trkCurrPts;
     std::vector< PointCloudT > trkNextPts;
     std::vector< std::vector<f32> > trkCorrDist;
+    pcl::PointCloud<SHOT1344>::Ptr trkCurrDesc;
+//    std::vector< PointCloudT > trkSeqPts;
+//    std::vector< std::vector< f32 > > trkSeqDist;
 };
 
 struct str_drawShape
@@ -331,12 +336,12 @@ private slots:
 
     void on_showSequence_clicked();
 
-    void on_TrkFeatures_clicked();
+//    void on_TrkFeatures_clicked();
 
-    void on_trackNext_clicked();
+//    void on_trackNext_clicked();
 
 
-    void on_trkFstFrame_clicked();
+//    void on_trkFstFrame_clicked();
 
 private:
     Ui::PCLViewer *ui;

@@ -590,9 +590,9 @@ extractFeatures::matchKeyPts(const pcl::PointCloud<SHOT1344>::Ptr & desc_1,
                 distFile << neighDists[0] <<"\n";
             }else
             {
-                idx ->push_back( desc_2->points.size() );
-                dist->push_back( 100 );
-                distFile << 100 <<"\n";
+//                idx ->push_back( desc_2->points.size() );
+//                dist->push_back( 100 );
+//                distFile << 100 <<"\n";
             }
         }
         ++i;
