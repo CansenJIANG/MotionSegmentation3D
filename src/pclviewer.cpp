@@ -1335,9 +1335,11 @@ void PCLViewer::on_drawMatches_clicked()
     }
     if(!loadSeqStr.trackNext && loadSeqStr.seqMode)
     {
+        std::cout<<"drawing in sequence mode.\n";
         drawSeqMatches();
         return;
     }
+    std::cout<<"drawing in feature matching mode.\n";
     PointCloudT::Ptr corr_1 (new PointCloudT);
     PointCloudT::Ptr corr_2 (new PointCloudT);
     std::vector<f32> *matchDist = &featDescrStr.goodMatchDist;
@@ -1432,6 +1434,9 @@ void PCLViewer::drawSeqMatches()
         return;
     }
     removeSeqLines();
+
+    std::cout<<"draw key points in sequence mode\n";
+
     PointCloudT::Ptr corr_1 (new PointCloudT);
     PointCloudT::Ptr corr_2 (new PointCloudT);
     std::vector<f32> matchDist;
@@ -1461,15 +1466,15 @@ void PCLViewer::drawSeqMatches()
                                                  10, trkPtCurrName.toStdString().c_str());
         viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE,
                                                  10, trkPtNextName.toStdString().c_str());
-        float minDist = commonFunc::getMinimum(matchDist);
-
+//        float minDist = commonFunc::getMinimum(matchDist);
+        std::cout<<"plot corr lines in sequence mode\n";
         for(size_t j=0; j< corr_1->points.size();)
         {
             QString lineName = "trkSeqLine_" + QString::number(seqMatchIdx);
 
             // scale the line width with the descriptor distance
             // smaller distance, higher the value
-            float scl = minDist/matchDist[j];
+            float scl = 1;//minDist/matchDist[j];
             float idxLineWidth = featDescrStr.lineWidth*scl;
 
             //        viewer->addArrow(*pt_1, *pt_2, viewColor[0], viewColor[1], viewColor[2],
@@ -1869,108 +1874,124 @@ void PCLViewer::on_showSequence_clicked()
         ui->outputMsg->appendPlainText(QString("Point cloud sequence is hiden."));
     }
 }
-/*
+
 ///////////////////////////////////////////////////////////////////////////////////////
 ///// func to track features in sequence
 ///////////////////////////////////////////////////////////////////////////////////////
 void PCLViewer::on_TrkFeatures_clicked()
 {
-//    s16 f0 = ui->trkStartIdx->text().toInt();
-//    s16 fn = ui->trkEndIdx->text().toInt();
-//    if(fn >= loadSeqStr.files.size())
-//    {
-//        fn = loadSeqStr.files.size()-1;
-//        ui->trkEndIdx->setText(QString(loadSeqStr.files.size()));
-//    }
-//    if(!loadSeqStr.loadFullSeq)
-//    {
-//        std::cout<<"loading track sequence\n";
-//        PointCloudT::Ptr pcSeqTmp(new PointCloudT);
-//        loadSeqStr.fullSeq.reserve( fn-f0+1 );
-//        // load the tracking sequence
-//        for(size_t i= 0;i<loadSeqStr.files.size();i++)
-//        {
-//            if(i>=f0 && i<= fn)
-//            {
-//                QFile f(loadSeqStr.files.at(i));
-//                pcl::io::loadPCDFile<PointT>((loadSeqStr.pcdPath+"/"+
-//                                              f.fileName()).toStdString().c_str(), *pcSeqTmp);
-//                loadSeqStr.fullSeq.push_back(*pcSeqTmp);
-//                continue;
-//            }
-//            PointCloudT emptyCloud;
-//            emptyCloud.resize(0);
-//            loadSeqStr.fullSeq.push_back(emptyCloud);
-//        }
-//    }
-//    loadSeqStr.seqIdx = f0;
-//    loadSeqStr.trackNext = true;
-//    on_showSequence_clicked();
-//    // track features
-//    trkFeatures2Frames();
+    s16 f0 = ui->trkStartIdx->text().toInt();
+    s16 fn = ui->trkEndIdx->text().toInt();
+    if(fn >= loadSeqStr.files.size())
+    {
+        fn = loadSeqStr.files.size()-1;
+        ui->trkEndIdx->setText(QString(loadSeqStr.files.size()));
+    }
+    if(!loadSeqStr.loadFullSeq)
+    {
+        std::cout<<"loading track sequence\n";
+        PointCloudT::Ptr pcSeqTmp(new PointCloudT);
+        loadSeqStr.fullSeq.reserve( fn-f0+1 );
+        // load the tracking sequence
+        for(size_t i= 0;i<loadSeqStr.files.size();i++)
+        {
+            if(i>=f0 && i<= fn)
+            {
+                QFile f(loadSeqStr.files.at(i));
+                pcl::io::loadPCDFile<PointT>((loadSeqStr.pcdPath+"/"+
+                                              f.fileName()).toStdString().c_str(), *pcSeqTmp);
+                loadSeqStr.fullSeq.push_back(*pcSeqTmp);
+                continue;
+            }
+            PointCloudT emptyCloud;
+            emptyCloud.resize(0);
+            loadSeqStr.fullSeq.push_back(emptyCloud);
+        }
+    }
+    loadSeqStr.seqIdx = f0;
+    loadSeqStr.trackNext = true;
+    on_showSequence_clicked();
+    // track features
+    trkFeatures2Frames();
+
+    PointCloudT matchPts;
+    for(size_t i=0; i<featDescrStr.matchIdx1.size(); i++)
+    {
+        matchPts.push_back(filteredKeyPts->points.at(featDescrStr.matchIdx1[i]));
+    }
+
+    loadSeqStr.trkCurrPts.push_back(matchPts);
+    matchPts.clear();
+    for(size_t i=0; i<featDescrStr.matchIdx2.size(); i++)
+    {
+        matchPts.push_back(filteredKeyPts2->points.at(featDescrStr.matchIdx2[i]));
+    }
+    loadSeqStr.trkNextPts.push_back(matchPts);
+    loadSeqStr.trkCorrDist.push_back(featDescrStr.matchDist);
 }
 
 /// func to track features of two consecutive
 void PCLViewer::trkFeatures2Frames()
 {
-//    if(!loadSeqStr.trackNext) return;
+    if(!loadSeqStr.trackNext) return;
 
-//    cloud.reset(new PointCloudT);
-//    cloud2.reset(new PointCloudT);
-//    *cloud  = loadSeqStr.fullSeq.at(loadSeqStr.seqIdx);
-//    *cloud2 = loadSeqStr.fullSeq.at(loadSeqStr.seqIdx+1);
-//    std::vector<s16> nanIdx;
-//    pcl::removeNaNFromPointCloud(*cloud,*cloud, nanIdx);
-//    nanIdx.clear();
-//    pcl::removeNaNFromPointCloud(*cloud2,*cloud2, nanIdx);
-//    nanIdx.clear();
-//    on_clipPC_clicked();
+    cloud.reset(new PointCloudT);
+    cloud2.reset(new PointCloudT);
+    *cloud  = loadSeqStr.fullSeq.at(loadSeqStr.seqIdx);
+    *cloud2 = loadSeqStr.fullSeq.at(loadSeqStr.seqIdx+1);
+    std::vector<s16> nanIdx;
+    pcl::removeNaNFromPointCloud(*cloud,*cloud, nanIdx);
+    nanIdx.clear();
+    pcl::removeNaNFromPointCloud(*cloud2,*cloud2, nanIdx);
+    nanIdx.clear();
+    on_clipPC_clicked();
 
-//    // shift point cloud for better visualization
-//    //    shiftPC_Z = 0.2;
-//    //    on_transformPc_clicked();
+    // shift point cloud for better visualization
+    //    shiftPC_Z = 0.2;
+    //    on_transformPc_clicked();
 
-//    // detect key points
-//    on_keyPtDetectors_activated(2);
-//    ui->keyPtDetectors->setCurrentIndex(2);
-//    on_runKeyPtsDetector_1_clicked();
-//    on_runKeyPtsDetector_2_clicked();
-//    // filter key points
-//    on_filterKeypts_1_clicked();
-//    on_filterKeypts_2_clicked();
-//    //    on_showFilteredKeypts_1_clicked();
-//    //    on_showFilteredKeypts_2_clicked();
+    // detect key points
+    on_keyPtDetectors_activated(2);
+    ui->keyPtDetectors->setCurrentIndex(2);
+    on_runKeyPtsDetector_1_clicked();
+    on_runKeyPtsDetector_2_clicked();
+    // filter key points
+    on_filterKeypts_1_clicked();
+    on_filterKeypts_2_clicked();
+    //    on_showFilteredKeypts_1_clicked();
+    //    on_showFilteredKeypts_2_clicked();
 
 
-//    // match key points
-//    on_featureDescriptor_activated(3);
-//    ui->featureDescriptor->setCurrentIndex(3);
-//    on_matchKeypts_clicked();
-//    //    ui->goodMatches->setChecked(true);
-//    //    on_showCloud_1_clicked();
-//    //    on_drawMatches_clicked();
-//    //    drawSeqMatches();
+    // match key points
+    on_featureDescriptor_activated(3);
+    ui->featureDescriptor->setCurrentIndex(3);
+    on_matchKeypts_clicked();
+//    ui->goodMatches->setChecked(true);
+    //    on_showCloud_1_clicked();
+    //    on_drawMatches_clicked();
+    //    drawSeqMatches();
 
-//    // update point cloud viewer
-//    viewer->updatePointCloud (cloud, "cloud");
-//    viewer->updatePointCloud (cloud2, "cloud2");
-//    ui->qvtkWidget->update();
+    // update point cloud viewer
+    viewer->updatePointCloud (cloud, "cloud");
+    viewer->updatePointCloud (cloud2, "cloud2");
+    ui->qvtkWidget->update();
 
-//    loadSeqStr.trackNext = false;
+    loadSeqStr.trackNext = false;
+
 }
 
 
 void PCLViewer::on_trackNext_clicked()
 {
-//    s16 trkEndIdx = ui->trkEndIdx->text().toInt();
-//    if( ++loadSeqStr.seqIdx < trkEndIdx)
-//    {
-//        loadSeqStr.trackNext = true;
-//    }else
-//    {
-//        loadSeqStr.trackNext = false;
-//    }
-//    trkFeatures2Frames();
+    s16 trkEndIdx = ui->trkEndIdx->text().toInt();
+    if( ++loadSeqStr.seqIdx < trkEndIdx)
+    {
+        loadSeqStr.trackNext = true;
+    }else
+    {
+        loadSeqStr.trackNext = false;
+    }
+    trkFeatures2Frames();
 }
 
 
@@ -1984,31 +2005,52 @@ void PCLViewer::on_trkFstFrame_clicked()
     std::vector<f32> matchDist;
     //    tracker3d.trkInit(cloud, cloud2, keyPts, keyPts2, featDescrStr.params,
     //                      loadSeqStr.trkCurrDesc, matchIdxCurr, matchIdxNext, matchDist);
-    PointCloudT matchPts;
-    for(size_t i=0; i<featDescrStr.matchIdx1.size(); i++)
-    {
-        matchPts.push_back(filteredKeyPts->points.at(featDescrStr.matchIdx1[i]));
-    }
 
-    loadSeqStr.trkSeqPts.push_back(matchPts);
-    matchPts.clear();
-    for(size_t i=0; i<featDescrStr.matchIdx2.size(); i++)
+
+    f32 medianDescDist = getMedian(featDescrStr.matchDist);
+    pcl::PointCloud<SHOT1344>::Ptr tmpDesc = featureDetector->Shot1344Descriptor(cloud2, filteredKeyPts2,
+                                                                                 featDescrStr.params);
+    loadSeqStr.trkCurrDesc.reset(new pcl::PointCloud<SHOT1344>);
+    PointCloudT corr_1, corr_2;
+    // get correspondences
+    for(u16 i=0; i<featDescrStr.matchIdx1.size(); ++i)
     {
-        matchPts.push_back(filteredKeyPts2->points.at(featDescrStr.matchIdx2[i]));
+        if(featDescrStr.matchDist[i]< medianDescDist)
+        {
+            corr_1.push_back(filteredKeyPts ->points.at(featDescrStr.matchIdx1[i]));
+            corr_2.push_back(filteredKeyPts2->points.at(featDescrStr.matchIdx2[i]));
+            matchDist.push_back(featDescrStr.matchDist[i]);
+            loadSeqStr.trkCurrDesc->push_back( tmpDesc->points.at( featDescrStr.matchIdx2[i]));
+        }
     }
-    loadSeqStr.trkSeqPts.push_back(matchPts);
-    loadSeqStr.trkSeqDist.push_back(featDescrStr.matchDist);
+    loadSeqStr.trkSeqPts.push_back(corr_1);
+    loadSeqStr.trkSeqPts.push_back(corr_2);
+    loadSeqStr.trkSeqDist.push_back(matchDist);
+    pcl::copyPointCloud(corr_2, *filteredKeyPts);
+//    for(size_t i=0; i<featDescrStr.matchIdx1.size(); i++)
+//    {
+//        matchPts.push_back(filteredKeyPts->points.at(featDescrStr.matchIdx1[i]));
+//    }
+
+//    loadSeqStr.trkSeqPts.push_back(matchPts);
+//    matchPts.clear();
+//    for(size_t i=0; i<featDescrStr.matchIdx2.size(); i++)
+//    {
+//        matchPts.push_back(filteredKeyPts2->points.at(featDescrStr.matchIdx2[i]));
+//    }
+//    loadSeqStr.trkSeqPts.push_back(matchPts);
+//    loadSeqStr.trkSeqDist.push_back(featDescrStr.matchDist);
 
     //    loadSeqStr.trkCurrIdx.push_back(featDescrStr.matchIdx1);
     //    loadSeqStr.trkNextIdx.push_back(featDescrStr.matchIdx2);
     //    loadSeqStr.trkCorrDist.push_back(featDescrStr.matchDist);
-    pcl::PointCloud<SHOT1344>::Ptr tmpDesc = featureDetector->Shot1344Descriptor(cloud2, filteredKeyPts2,
-                                                                                 featDescrStr.params);
-    loadSeqStr.trkCurrDesc.reset(new pcl::PointCloud<SHOT1344>);
-    for(size_t i=0; i<featDescrStr.matchIdx2.size(); i++)
-    {
-        loadSeqStr.trkCurrDesc->push_back( tmpDesc->points.at( featDescrStr.matchIdx2[i]));
-    }
+//    pcl::PointCloud<SHOT1344>::Ptr tmpDesc = featureDetector->Shot1344Descriptor(cloud2, filteredKeyPts2,
+//                                                                                 featDescrStr.params);
+//    loadSeqStr.trkCurrDesc.reset(new pcl::PointCloud<SHOT1344>);
+//    for(size_t i=0; i<featDescrStr.matchIdx2.size(); i++)
+//    {
+//        loadSeqStr.trkCurrDesc->push_back( tmpDesc->points.at( featDescrStr.matchIdx2[i]));
+//    }
     std::cout<<"track first frame done!\n";
     s16 trkEndIdx = ui->trkEndIdx->text().toInt();
     do
@@ -2065,10 +2107,12 @@ void PCLViewer::on_trkFstFrame_clicked()
 
     std::ofstream keyPtsFile;
     QString fileNameIdx = "trkSeqPts.txt";
-    keyPtsFile.open (fileNameIdx.toStdString().c_str(), std::ios_base::app);
+    keyPtsFile.open (fileNameIdx.toStdString().c_str(), std::ios_base::trunc);
+    std::cout<<"loadSeqStr.trkSeqPts.size(): "<<loadSeqStr.trkSeqPts.size();
     for(size_t i=0; i<loadSeqStr.trkSeqPts.size();i++)
     {
         PointCloudT keyPtsIdx= loadSeqStr.trkSeqPts.at(i);
+        std::cout<<"PointCloudT size(): "<<keyPtsIdx.points.size();
         for(uc8 j =0; j<3; j++)
         {
             PointT *current_point = &keyPtsIdx.points[0];
@@ -2078,9 +2122,11 @@ void PCLViewer::on_trkFstFrame_clicked()
                 keyPtsFile << *(dataPt+j) <<" " ;
                 ++current_point;
             }
+            keyPtsFile << "\n";
         }
+        keyPtsFile << "\n";
     }
     keyPtsFile.close();
 
 }
-*/
+
